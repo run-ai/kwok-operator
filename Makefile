@@ -28,8 +28,8 @@ BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 # This variable is used to construct full image tags for bundle and catalog images.
 #
 # For example, running 'make bundle-build bundle-push catalog-build catalog-push' will build and push both
-# kwok.sigs.k8s.io/kwok-operator-bundle:$VERSION and kwok.sigs.k8s.io/kwok-operator-catalog:$VERSION.
-IMAGE_TAG_BASE ?= kwok.sigs.k8s.io/kwok-operator
+# k8s.io/kwok-operator-bundle:$VERSION and k8s.io/kwok-operator-catalog:$VERSION.
+IMAGE_TAG_BASE ?= k8s.io/kwok-operator
 
 # BUNDLE_IMG defines the image:tag used for the bundle.
 # You can use it as an arg. (E.g make bundle-build BUNDLE_IMG=<some-registry>/<project-name-bundle>:<tag>)
@@ -143,7 +143,7 @@ build: manifests generate fmt vet ## Build manager binary.
 	go build -o bin/manager cmd/main.go
 
 .PHONY: run
-run: manifests generate fmt vet ## Run a controller from your host.
+run: generate fmt vet ## Run a controller from your host.
 	go run ./cmd/main.go
 
 # If you wish to build the manager image targeting other platforms you can use the --platform flag.

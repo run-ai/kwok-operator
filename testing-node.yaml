@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: Node
+metadata:
+  annotations:
+    kwok.x-k8s.io/node: fake
+    node.alpha.kubernetes.io/ttl: "0"
+  creationTimestamp: "2024-05-29T09:27:37Z"
+  generateName: kwok-node-
+  ownerReferences:
+  - apiVersion: kwok.sigs.k8s.io/v1beta1
+    blockOwnerDeletion: true
+    controller: true
+    kind: NodePool
+    name: nodepool-sample
+    uid: 410f16d4-77c1-4870-ae09-184e9ff7b4c4
+  resourceVersion: "2431"
+  uid: 47e257d6-5e95-4f4a-80d6-4234db9477bb
+spec:
+  podCIDR: 10.244.2.0/24
+  podCIDRs:
+  - 10.244.2.0/24
+  taints:
+  - effect: NoSchedule
+    key: kwok.x-k8s.io/node
+    value: fake
+status:
+  addresses:
+  - address: 10.244.0.5
+    type: InternalIP
+  allocatable:
+    cpu: 1k
+    memory: 1Ti
+    pods: 1M
+  capacity:
+    cpu: 1k
+    memory: 1Ti
+    pods: 1M
+  conditions:
+  - lastHeartbeatTime: "2024-05-29T09:27:37Z"
+    lastTransitionTime: "2024-05-29T09:27:37Z"
+    message: kubelet is posting ready status
+    reason: KubeletReady
+    status: "True"
+    type: Ready
+  - lastHeartbeatTime: "2024-05-29T09:27:37Z"
+    lastTransitionTime: "2024-05-29T09:27:37Z"
+    message: kubelet has sufficient memory available
+    reason: KubeletHasSufficientMemory
+    status: "False"
+    type: MemoryPressure
+  - lastHeartbeatTime: "2024-05-29T09:27:37Z"
+    lastTransitionTime: "2024-05-29T09:27:37Z"
+    message: kubelet has no disk pressure
+    reason: KubeletHasNoDiskPressure
+    status: "False"
+    type: DiskPressure
+  - lastHeartbeatTime: "2024-05-29T09:27:37Z"
+    lastTransitionTime: "2024-05-29T09:27:37Z"
+    message: kubelet has sufficient PID available
+    reason: KubeletHasSufficientPID
+    status: "False"
+    type: PIDPressure
+  - lastHeartbeatTime: "2024-05-29T09:27:37Z"
+    lastTransitionTime: "2024-05-29T09:27:37Z"
+    message: RouteController created a route
+    reason: RouteCreated
+    status: "False"
+    type: NetworkUnavailable
+  daemonEndpoints:
+    kubeletEndpoint:
+      Port: 10247
+  nodeInfo:
+    architecture: amd64
+    bootID: ""
+    containerRuntimeVersion: kwok-v0.5.2
+    kernelVersion: kwok-v0.5.2
+    kubeProxyVersion: kwok-v0.5.2
+    kubeletVersion: kwok-v0.5.2
+    machineID: ""
+    operatingSystem: linux
+    osImage: ""
+    systemUUID: ""
+  phase: Running
