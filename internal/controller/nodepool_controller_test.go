@@ -19,12 +19,11 @@ package controller
 import (
 	"context"
 	"fmt"
-	"testing"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
+	"testing"
 
 	kwoksigsv1beta1 "github.com/run-ai/kwok-operator/api/v1beta1"
 	corev1 "k8s.io/api/core/v1"
@@ -97,7 +96,7 @@ func TestReconcileNodePool(t *testing.T) {
 
 	// Create a NodePool object for testing
 	nodePool := &v1beta1.NodePool{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-nodepool"},
+		ObjectMeta: metav1.ObjectMeta{Name: "single-nodepool"},
 		Spec: v1beta1.NodePoolSpec{
 			NodeCount: 2, // Set the desired number of nodes
 			NodeTemplate: corev1.Node{
@@ -122,14 +121,9 @@ func TestReconcileNodePool(t *testing.T) {
 	// Create the NodePool object in the fake client
 	err := fakeClient.Create(ctx, nodePool)
 	assert.NoError(t, err, "failed to create NodePool object")
-	newNodePool := &v1beta1.NodePool{}
-	err = fakeClient.Get(ctx, types.NamespacedName{Name: "test-nodepool"}, newNodePool)
-	if err != nil {
-		fmt.Println(err)
-	}
 
 	// Reconcile the NodePool
-	req := reconcile.Request{NamespacedName: types.NamespacedName{Name: "test-nodepool"}}
+	req := reconcile.Request{NamespacedName: types.NamespacedName{Name: "single-nodepool"}}
 	_, err = reconciler.Reconcile(ctx, req)
 	assert.NoError(t, err, "reconciliation failed")
 
@@ -138,6 +132,18 @@ func TestReconcileNodePool(t *testing.T) {
 	err = fakeClient.List(ctx, nodes)
 	assert.NoError(t, err, "failed to list nodes")
 	assert.Equal(t, int(nodePool.Spec.NodeCount), len(nodes.Items), "unexpected number of nodes")
+
+	// delete the NodePool object and check if the nodes are deleted
+
+	err = fakeClient.Delete(ctx, nodePool)
+	assert.NoError(t, err, "failed to delete NodePool object")
+	// Reconcile the NodePool
+	req = reconcile.Request{NamespacedName: types.NamespacedName{Name: "single-nodepool"}}
+	_, err = reconciler.Reconcile(ctx, req)
+	assert.Error(t, err, "single-nodepool not found")
+	nodes = &corev1.NodeList{}
+	fmt.Println("the number is: ", len(nodes.Items))
+	assert.Equal(t, 0, len(nodes.Items), "unexpected number of nodes")
 }
 
 func TestMultipleNodePools(t *testing.T) {
