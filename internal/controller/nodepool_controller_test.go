@@ -25,18 +25,19 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"testing"
 
+	"github.com/run-ai/kwok-operator/api/v1beta1"
 	kwoksigsv1beta1 "github.com/run-ai/kwok-operator/api/v1beta1"
+	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+)
 
-	"github.com/stretchr/testify/assert"
-
-	"github.com/run-ai/kwok-operator/api/v1beta1"
+const (
+	kubernetesRoleLabel = "kubernetes.io/role"
 )
 
 var _ = Describe("NodePool Controller", func() {
@@ -225,6 +226,97 @@ func assertNodeCount(t *testing.T, c client.Client, nodeName string, expectedNod
 		}
 	}
 	assert.Equal(t, int(expectedNodeCount), count, "unexpected node count for NodePool: "+nodeName)
+}
+
+// Test that changing nodeTemplate in NodePool spec updates the nodes
+func TestNodeTemplateChange(t *testing.T) {
+	// Create a fake client
+	fakeClient := fake.NewClientBuilder().WithScheme(setupScheme()).WithStatusSubresource(&v1beta1.NodePool{}).Build()
+
+	// Initial node count for NodePool
+	initialNodeCount := int32(2)
+
+	// Create the NodePool object for testing
+	nodePool := &v1beta1.NodePool{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-nodepool"},
+		Spec: v1beta1.NodePoolSpec{
+			NodeCount: initialNodeCount,
+			NodeTemplate: corev1.Node{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						kubernetesRoleLabel: "test-nodepool",
+					},
+				},
+			},
+		},
+	}
+
+	// Create a Reconciler instance
+	reconciler := &NodePoolReconciler{
+		Client: fakeClient,
+		Scheme: setupScheme(),
+	}
+
+	// Create a context
+	ctx := context.Background()
+
+	// Create the NodePool object in the fake client
+	err := fakeClient.Create(ctx, nodePool)
+	assert.NoError(t, err, "failed to create NodePool object")
+
+	// Reconcile the NodePool
+	req := reconcile.Request{NamespacedName: types.NamespacedName{Name: "test-nodepool"}}
+	_, err = reconciler.Reconcile(ctx, req)
+	assert.NoError(t, err, "reconciliation failed")
+
+	// Verify that the number of nodes matches the desired count
+	nodes := &corev1.NodeList{}
+	err = fakeClient.List(ctx, nodes)
+	assert.NoError(t, err, "failed to list nodes")
+	assert.Equal(t, int(nodePool.Spec.NodeCount), len(nodes.Items), "unexpected number of nodes")
+
+	// Verify that the nodes have the correct labels
+	for _, node := range nodes.Items {
+		if node.Labels[nodePoolControllerLabel] == nodePool.Name {
+			assert.Equal(t, nodePool.Spec.NodeTemplate.Labels[kubernetesRoleLabel], "test-nodepool", "unexpected node labels")
+		}
+	}
+
+	// update the NodePool object
+	err = fakeClient.Get(ctx, types.NamespacedName{Name: "test-nodepool"}, nodePool)
+	assert.NoError(t, err, "failed to get NodePool object")
+
+	// Update the nodeTemplate in the NodePool spec
+	newNodeTemplate := corev1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Labels: map[string]string{
+				kubernetesRoleLabel: "test-nodepool2",
+			},
+		},
+	}
+
+	nodePool.Spec.NodeTemplate = newNodeTemplate
+	err = fakeClient.Update(ctx, nodePool)
+	assert.NoError(t, err, "failed to update NodePool object")
+
+	// Reconcile the NodePool
+	_, err = reconciler.Reconcile(ctx, req)
+	assert.NoError(t, err, "reconciliation failed")
+
+	// Verify that the nodes have been updated
+	nodes = &corev1.NodeList{}
+	err = fakeClient.List(ctx, nodes)
+	assert.NoError(t, err, "failed to list nodes")
+
+	// update the NodePool object
+	err = fakeClient.Get(ctx, types.NamespacedName{Name: "test-nodepool"}, nodePool)
+	assert.NoError(t, err, "failed to get NodePool object")
+
+	for _, node := range nodes.Items {
+		if node.Labels[nodePoolControllerLabel] == nodePool.Name {
+			assert.Equal(t, nodePool.Spec.NodeTemplate.Labels[kubernetesRoleLabel], "test-nodepool2", "unexpected node labels")
+		}
+	}
 }
 
 // setupScheme sets up the scheme for the tests

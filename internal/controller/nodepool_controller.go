@@ -38,6 +38,7 @@ const (
 	nodePoolFinalizer       = "kwok.sigs.k8s.io/finalizer"
 	nodePoolControllerLabel = "kwok.x-k8s.io/controller"
 	nodePoolAnnotation      = "kwok.x-k8s.io/node"
+	fakeString              = "fake"
 )
 
 // NodePoolReconciler reconciles a NodePool object
@@ -155,6 +156,48 @@ func (r *NodePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		}
 		return ctrl.Result{Requeue: true}, nil
 	}
+
+	// Check if nodeTemplate has changed
+	if nodePool.Status.ObservedGeneration != nodePool.Generation {
+		log.Info("NodeTemplate has changed")
+		err := r.statusConditionController(ctx, nodePool, metav1.Condition{
+			Type:    "Available",
+			Status:  metav1.ConditionFalse,
+			Reason:  "Updating",
+			Message: "Updating the NodePool",
+		})
+		if err != nil {
+			log.Error(err, "Failed to update NodePool status")
+			return ctrl.Result{}, err
+		}
+		emptyNodePool := &kwoksigsv1beta1.NodePool{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: nodePool.Name,
+			},
+		}
+		err = r.deleteNodes(ctx, emptyNodePool, nodes)
+		if err != nil {
+			log.Error(err, "Failed to delete nodes")
+			return ctrl.Result{}, err
+		}
+		err = r.createNodes(ctx, nodePool, nodes)
+		if err != nil {
+			log.Error(err, "Failed to create nodes")
+			return ctrl.Result{}, err
+		}
+		err = r.statusConditionController(ctx, nodePool, metav1.Condition{
+			Type:    "Available",
+			Status:  metav1.ConditionTrue,
+			Reason:  "Ready",
+			Message: "NodePool is ready",
+		})
+		if err != nil {
+			log.Error(err, "Failed to update NodePool status")
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{Requeue: true}, nil
+	}
+
 	if !nodePool.DeletionTimestamp.IsZero() {
 		// Remove finalizer from the NodePool
 		log.Info("Deleting the NodePool")
@@ -209,14 +252,14 @@ func (r *NodePoolReconciler) createNodes(ctx context.Context, nodePool *kwoksigs
 	}
 	nodeTaint = append(nodeTaint, corev1.Taint{
 		Key:    nodePoolAnnotation,
-		Value:  "fake",
+		Value:  fakeString,
 		Effect: corev1.TaintEffectNoSchedule,
 	})
 	nodeAnnotation := nodePool.Spec.NodeTemplate.Annotations
 	if nodeAnnotation == nil {
 		nodeAnnotation = make(map[string]string)
 	}
-	nodeAnnotation[nodePoolAnnotation] = "fake"
+	nodeAnnotation[nodePoolAnnotation] = fakeString
 	for i := int32(len(nodes)); i < nodePool.Spec.NodeCount; i++ {
 		// Create a new node
 		node := &corev1.Node{
@@ -237,6 +280,11 @@ func (r *NodePoolReconciler) createNodes(ctx context.Context, nodePool *kwoksigs
 			return err
 		}
 	}
+
+	err := r.updateObservedGeneration(ctx, nodePool)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -248,6 +296,10 @@ func (r *NodePoolReconciler) deleteNodes(ctx context.Context, nodePool *kwoksigs
 		if err != nil {
 			return err
 		}
+	}
+	err := r.updateObservedGeneration(ctx, nodePool)
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -267,6 +319,12 @@ func (r *NodePoolReconciler) deleteFinalizer(ctx context.Context, nodePool *kwok
 // statusConditionController updates the status of the NodePool
 func (r *NodePoolReconciler) statusConditionController(ctx context.Context, nodePool *kwoksigsv1beta1.NodePool, condition metav1.Condition) error {
 	meta.SetStatusCondition(&nodePool.Status.Conditions, condition)
+	return r.Status().Update(ctx, nodePool)
+}
+
+// updateObservedGeneration updates the observed generation of the NodePool
+func (r *NodePoolReconciler) updateObservedGeneration(ctx context.Context, nodePool *kwoksigsv1beta1.NodePool) error {
+	nodePool.Status.ObservedGeneration = nodePool.Generation
 	return r.Status().Update(ctx, nodePool)
 }
 
