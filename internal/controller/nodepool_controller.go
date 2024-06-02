@@ -119,7 +119,7 @@ func (r *NodePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 				log.Error(err, "Failed to update NodePool status")
 				return ctrl.Result{}, err
 			}
-			log.Info("Too few nodes... creating! ")
+			log.Info("Scalling up the NodePool... creating nodes!")
 			err = r.createNodes(ctx, nodePool, nodes)
 			if err != nil {
 				log.Error(err, "Failed to create nodes")
