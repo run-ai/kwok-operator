@@ -157,7 +157,7 @@ func (r *NodePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	// Check if nodeTemplate has changed
+	// Check if observed generation is different from the generation
 	if nodePool.Status.ObservedGeneration != nodePool.Generation {
 		log.Info("NodeTemplate has changed")
 		err := r.statusConditionController(ctx, nodePool, metav1.Condition{
