@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -46,8 +47,7 @@ var _ = Describe("NodePool Controller", func() {
 		ctx := context.Background()
 
 		typeNamespacedName := types.NamespacedName{
-			Name:      resourceName,
-			Namespace: "default", // TODO(user):Modify as needed
+			Name: resourceName,
 		}
 		nodepool := &kwoksigsv1beta1.NodePool{}
 
@@ -57,8 +57,7 @@ var _ = Describe("NodePool Controller", func() {
 			if err != nil && errors.IsNotFound(err) {
 				resource := &kwoksigsv1beta1.NodePool{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      resourceName,
-						Namespace: "default",
+						Name: resourceName,
 					},
 					// TODO(user): Specify other spec details if needed.
 				}
@@ -94,7 +93,7 @@ var _ = Describe("NodePool Controller", func() {
 
 func TestReconcileNodePool(t *testing.T) {
 	// Create a fake client
-	fakeClient := fake.NewClientBuilder().WithScheme(setupScheme()).Build()
+	fakeClient := fake.NewClientBuilder().WithScheme(setupScheme()).WithStatusSubresource(&v1beta1.NodePool{}).Build()
 
 	// Create a NodePool object for testing
 	nodePool := &v1beta1.NodePool{
@@ -108,6 +107,7 @@ func TestReconcileNodePool(t *testing.T) {
 				},
 			},
 		},
+		Status: v1beta1.NodePoolStatus{},
 	}
 
 	// Create a Reconciler instance
@@ -122,9 +122,14 @@ func TestReconcileNodePool(t *testing.T) {
 	// Create the NodePool object in the fake client
 	err := fakeClient.Create(ctx, nodePool)
 	assert.NoError(t, err, "failed to create NodePool object")
+	newNodePool := &v1beta1.NodePool{}
+	err = fakeClient.Get(ctx, types.NamespacedName{Name: "test-nodepool"}, newNodePool)
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	// Reconcile the NodePool
-	req := reconcile.Request{NamespacedName: types.NamespacedName{Name: "test-nodepool", Namespace: "default"}}
+	req := reconcile.Request{NamespacedName: types.NamespacedName{Name: "test-nodepool"}}
 	_, err = reconciler.Reconcile(ctx, req)
 	assert.NoError(t, err, "reconciliation failed")
 
@@ -137,7 +142,7 @@ func TestReconcileNodePool(t *testing.T) {
 
 func TestMultipleNodePools(t *testing.T) {
 	// Create a fake client
-	fakeClient := fake.NewClientBuilder().WithScheme(setupScheme()).Build()
+	fakeClient := fake.NewClientBuilder().WithScheme(setupScheme()).WithStatusSubresource(&v1beta1.NodePool{}).Build()
 
 	// Initial node count for first NodePool
 	initialNodeCount1 := int32(2)
@@ -189,12 +194,12 @@ func TestMultipleNodePools(t *testing.T) {
 	assert.NoError(t, err, "failed to create NodePool 2")
 
 	// Reconcile the first NodePool
-	req1 := reconcile.Request{NamespacedName: types.NamespacedName{Name: "test-nodepool-1", Namespace: "default"}}
+	req1 := reconcile.Request{NamespacedName: types.NamespacedName{Name: "test-nodepool-1"}}
 	_, err = reconciler.Reconcile(ctx, req1)
 	assert.NoError(t, err, "reconciliation for NodePool 1 failed")
 
 	// Reconcile the second NodePool
-	req2 := reconcile.Request{NamespacedName: types.NamespacedName{Name: "test-nodepool-2", Namespace: "default"}}
+	req2 := reconcile.Request{NamespacedName: types.NamespacedName{Name: "test-nodepool-2"}}
 	_, err = reconciler.Reconcile(ctx, req2)
 	assert.NoError(t, err, "reconciliation for NodePool 2 failed")
 
