@@ -158,16 +158,6 @@ func (r *NodePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	if !nodePool.DeletionTimestamp.IsZero() {
 		// Remove finalizer from the NodePool
 		log.Info("Deleting the NodePool")
-		err := r.deleteNodes(ctx, nodePool, nodes)
-		if err != nil {
-			log.Error(err, "Failed to delete nodes")
-			return ctrl.Result{}, err
-		}
-		err = r.deleteFinalizer(ctx, nodePool)
-		if err != nil {
-			log.Error(err, "Failed to delete finalizer from NodePool")
-			return ctrl.Result{}, err
-		}
 		err = r.statusConditionController(ctx, nodePool, metav1.Condition{
 			Type:    "Available",
 			Status:  metav1.ConditionFalse,
@@ -176,6 +166,16 @@ func (r *NodePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		})
 		if err != nil {
 			log.Error(err, "Failed to update NodePool status")
+			return ctrl.Result{}, err
+		}
+		err := r.deleteNodes(ctx, nodePool, nodes)
+		if err != nil {
+			log.Error(err, "Failed to delete nodes")
+			return ctrl.Result{}, err
+		}
+		err = r.deleteFinalizer(ctx, nodePool)
+		if err != nil {
+			log.Error(err, "Failed to delete finalizer from NodePool")
 			return ctrl.Result{}, err
 		}
 		return ctrl.Result{}, nil
