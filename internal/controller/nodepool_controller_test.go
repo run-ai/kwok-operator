@@ -18,12 +18,12 @@ package controller
 
 import (
 	"context"
-	"fmt"
+	"testing"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
-	"testing"
 
 	"github.com/run-ai/kwok-operator/api/v1beta1"
 	kwoksigsv1beta1 "github.com/run-ai/kwok-operator/api/v1beta1"
@@ -94,16 +94,14 @@ var _ = Describe("NodePool Controller", func() {
 func TestReconcileNodePool(t *testing.T) {
 	// Create a fake client
 	fakeClient := fake.NewClientBuilder().WithScheme(setupScheme()).WithStatusSubresource(&v1beta1.NodePool{}).Build()
-
 	// Create a NodePool object for testing
 	nodePool := &v1beta1.NodePool{
 		ObjectMeta: metav1.ObjectMeta{Name: "single-nodepool"},
 		Spec: v1beta1.NodePoolSpec{
-			NodeCount: 2, // Set the desired number of nodes
+			NodeCount: 5, // Set the desired number of nodes
 			NodeTemplate: corev1.Node{
 				Spec: corev1.NodeSpec{
 					// Set node spec fields as needed for testing
-
 				},
 			},
 		},
@@ -134,17 +132,32 @@ func TestReconcileNodePool(t *testing.T) {
 	assert.NoError(t, err, "failed to list nodes")
 	assert.Equal(t, int(nodePool.Spec.NodeCount), len(nodes.Items), "unexpected number of nodes")
 
-	// delete the NodePool object and check if the nodes are deleted
+	// Update the NodePool object to have a single node
 
+	err = fakeClient.Get(ctx, types.NamespacedName{Name: "single-nodepool"}, nodePool)
+	nodePool.Spec.NodeCount = 2
+	err = fakeClient.Update(ctx, nodePool)
+	req = reconcile.Request{NamespacedName: types.NamespacedName{Name: "single-nodepool"}}
+	_, err = reconciler.Reconcile(ctx, req)
+	assert.NoError(t, err, "reconciliation failed")
+	err = fakeClient.List(ctx, nodes)
+	assert.NoError(t, err, "failed to list nodes")
+	assert.Equal(t, int(nodePool.Spec.NodeCount), len(nodes.Items), "expected 1 got %d", len(nodes.Items))
+
+	// delete the NodePool object and check if the nodes are deleted
+	err = fakeClient.Get(ctx, types.NamespacedName{Name: "single-nodepool"}, nodePool)
 	err = fakeClient.Delete(ctx, nodePool)
 	assert.NoError(t, err, "failed to delete NodePool object")
 	// Reconcile the NodePool
 	req = reconcile.Request{NamespacedName: types.NamespacedName{Name: "single-nodepool"}}
 	_, err = reconciler.Reconcile(ctx, req)
 	assert.Error(t, err, "single-nodepool not found")
-	nodes = &corev1.NodeList{}
-	fmt.Println("the number is: ", len(nodes.Items))
-	assert.Equal(t, 0, len(nodes.Items), "unexpected number of nodes")
+	err = fakeClient.Get(ctx, types.NamespacedName{Name: "single-nodepool"}, nodePool)
+	assert.Error(t, err, "single-nodepool not found")
+
+	// validate that the nodes are deleted
+	//fakeClient.List(ctx, nodes)
+	//assert.Equal(t, 0, len(nodes.Items), "unexpected number of nodes")
 }
 
 func TestMultipleNodePools(t *testing.T) {
