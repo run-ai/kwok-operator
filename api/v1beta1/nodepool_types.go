@@ -29,7 +29,6 @@ type NodePoolSpec struct {
 
 // NodePoolStatus defines the observed state of NodePool
 type NodePoolStatus struct {
-	// Important: Run "make" to regenerate code after modifying this file
 	Conditions         []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 	ObservedGeneration int64              `json:"observedGeneration,omitempty" protobuf:"varint,2,opt,name=observedGeneration"`
 }
