@@ -59,6 +59,9 @@ var _ = Describe("NodePool Controller", func() {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: resourceName,
 					},
+					Spec: kwoksigsv1beta1.NodePoolSpec{
+						NodeCount: 2,
+					},
 					// TODO(user): Specify other spec details if needed.
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())

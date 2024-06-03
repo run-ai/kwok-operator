@@ -18,8 +18,7 @@ package controller
 
 import (
 	"context"
-	"strings"
-	"time"
+	kwoksigsv1beta1 "github.com/run-ai/kwok-operator/api/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -29,7 +28,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	kwoksigsv1beta1 "github.com/run-ai/kwok-operator/api/v1beta1"
+	"strings"
+	"time"
 )
 
 const (
@@ -199,6 +199,16 @@ func (r *NodePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	if !nodePool.DeletionTimestamp.IsZero() {
 		// Remove finalizer from the NodePool
 		log.Info("Deleting the NodePool")
+		err = r.statusConditionController(ctx, nodePool, metav1.Condition{
+			Type:    "Available",
+			Status:  metav1.ConditionFalse,
+			Reason:  "Deleting",
+			Message: "Deleting the NodePool",
+		})
+		if err != nil {
+			log.Error(err, "Failed to update NodePool status")
+			return ctrl.Result{}, err
+		}
 		err := r.deleteNodes(ctx, nodePool, nodes)
 		if err != nil {
 			log.Error(err, "Failed to delete nodes")
