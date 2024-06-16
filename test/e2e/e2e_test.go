@@ -27,7 +27,7 @@ import (
 	"github.com/run-ai/kwok-operator/test/utils"
 )
 
-const namespace = "kwok-operator-system"
+const namespace = "kwok-operator"
 
 var _ = Describe("controller", Ordered, func() {
 	BeforeAll(func() {
@@ -75,17 +75,17 @@ var _ = Describe("controller", Ordered, func() {
 			cmd = exec.Command("make", "install")
 			_, err = utils.Run(cmd)
 
-			By("deploying the controller-manager")
+			By("deploying the kwok-operator")
 			cmd = exec.Command("make", "deploy", fmt.Sprintf("IMG=%s", projectimage))
 			_, err = utils.Run(cmd)
 			ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
-			By("validating that the controller-manager pod is running as expected")
+			By("validating that the kwok-operator pod is running as expected")
 			verifyControllerUp := func() error {
 				// Get pod name
 
 				cmd = exec.Command("kubectl", "get",
-					"pods", "-l", "control-plane=controller-manager",
+					"pods", "-l", "control-plane=kwok-operator",
 					"-o", "go-template={{ range .items }}"+
 						"{{ if not .metadata.deletionTimestamp }}"+
 						"{{ .metadata.name }}"+
@@ -100,7 +100,7 @@ var _ = Describe("controller", Ordered, func() {
 					return fmt.Errorf("expect 1 controller pods running, but got %d", len(podNames))
 				}
 				controllerPodName = podNames[0]
-				ExpectWithOffset(2, controllerPodName).Should(ContainSubstring("controller-manager"))
+				ExpectWithOffset(2, controllerPodName).Should(ContainSubstring("kwok-operator"))
 
 				// Validate pod status
 				cmd = exec.Command("kubectl", "get",
