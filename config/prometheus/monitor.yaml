@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/part-of: kwok-operator
     app.kubernetes.io/managed-by: kustomize
   name: kwok-operator-metrics-monitor
-  namespace: system
+  namespace: kwok-operator
 spec:
   endpoints:
     - path: /metrics
