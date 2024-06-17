@@ -5,6 +5,18 @@ metadata:
   name: kwok-operator-cr
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - nodes
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - kwok.sigs.k8s.io
   resources:
   - nodepools
