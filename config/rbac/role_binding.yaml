@@ -3,17 +3,17 @@ kind: ClusterRoleBinding
 metadata:
   labels:
     app.kubernetes.io/name: clusterrolebinding
-    app.kubernetes.io/instance: kwok-operator-crb
+    app.kubernetes.io/instance: manager-rolebinding
     app.kubernetes.io/component: rbac
     app.kubernetes.io/created-by: kwok-operator
     app.kubernetes.io/part-of: kwok-operator
     app.kubernetes.io/managed-by: kustomize
-  name: kwok-operator-crb
+  name: manager-rolebinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: kwok-operator-cr
+  name: manager-role
 subjects:
 - kind: ServiceAccount
-  name: kwok-operator-sa
-  namespace: kwok-operator
+  name: controller-manager
+  namespace: system

@@ -12,7 +12,7 @@ metadata:
   name: nodepool-editor-role
 rules:
 - apiGroups:
-  - kwok.sigs.k8s.io
+  - kwok.sigs.run-ai.com
   resources:
   - nodepools
   verbs:
@@ -24,7 +24,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - kwok.sigs.k8s.io
+  - kwok.sigs.run-ai.com
   resources:
   - nodepools/status
   verbs:

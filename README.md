@@ -1,136 +1,91 @@
-# Kwok Operator
+# kwok-operator
+// TODO(user): Add simple overview of use/purpose
 
-## Overview
+## Description
+// TODO(user): An in-depth paragraph about your project and overview of use
 
-The Kwok Operator is a Kubernetes operator designed to create virtual nodes within a Kubernetes cluster using Kwok, by applying custom resource definitions (CRDs) for node pools.
+## Getting Started
 
-## Tested
-The Kwok operator test on top the following kuberenetes flavors 
-  - Vanila 
-  - EKS ( Elastic Kubernetes Service )
-  - GKE ( Goole Kubernetes Engine )
-  - AKS ( Azure Kubernetes Service ) 
-  - RKE1 
-  - RKE2 
-  - Openshift 
-  - Kind 
+### Prerequisites
+- go version v1.20.0+
+- docker version 17.03+.
+- kubectl version v1.11.3+.
+- Access to a Kubernetes v1.11.3+ cluster.
 
-## Features
+### To Deploy on the cluster
+**Build and push your image to the location specified by `IMG`:**
 
-- Automatically creates virtual nodes on Kwok infrastructure.
-- Utilizes Kubernetes Custom Resource Definitions (CRDs) for easy configuration.
-- Provides seamless integration with Kubernetes clusters.
+```sh
+make docker-build docker-push IMG=<some-registry>/kwok-operator:tag
+```
 
-## Prerequisites
+**NOTE:** This image ought to be published in the personal registry you specified. 
+And it is required to have access to pull the image from the working environment. 
+Make sure you have the proper permission to the registry if the above commands don’t work.
 
-Before using the Kwok Operator, ensure you have the following prerequisites installed:
+**Install the CRDs into the cluster:**
 
-- tested on Kubernetes cluster (version 1.24 or later)
-- Kwok infrastructure set up and accessible from the cluster
-- kubectl CLI installed and configured to access the Kubernetes cluster
+```sh
+make install
+```
 
-## Installation
+**Deploy the Manager to the cluster with the image specified by `IMG`:**
 
-To install the Kwok Operator, follow these steps:
+```sh
+make deploy IMG=<some-registry>/kwok-operator:tag
+```
 
-1. Clone the Kwok Operator repository:
+> **NOTE**: If you encounter RBAC errors, you may need to grant yourself cluster-admin 
+privileges or be logged in as admin.
 
-   ```shell
-   git clone git@github.com:run-ai/kwok-operator.git
-   ```
-2. enter to kwok-operator directory
-   ```shell
-   cd kwok-operator
-   ```
-3. make sure kwok installed in your cluster from the URL: https://kwok.sigs.k8s.io/docs/user/kwok-in-cluster/
-   or install by the script install_kwok.sh
-   ```shell
-   ./install_kwok.sh
-   ```
+**Create instances of your solution**
+You can apply the samples (examples) from the config/sample:
 
-3. Apply the Kubernetes manifests:
-   ```shell
-   kubectl apply -k config/default
-   ```
+```sh
+kubectl apply -k config/samples/
+```
 
-## Usage
+>**NOTE**: Ensure that the samples has default values to test it out.
 
-To use the Kwok Operator, follow these steps:
+### To Uninstall
+**Delete the instances (CRs) from the cluster:**
 
-1. Define a NodePool custom resource (CR) with your desired configuration. Example:
+```sh
+kubectl delete -k config/samples/
+```
 
-   ```yaml
-    apiVersion: kwok.sigs.k8s.io/v1beta1
-    kind: NodePool
-    metadata:
-    labels:
-        app.kubernetes.io/instance: nodepool-sample
-    name: nodepool-sample
-    spec:
-    nodeCount: 15
-    nodeTemplate:
-        apiVersion: v1
-        metadata:
-        annotations:
-            node.alpha.kubernetes.io/ttl: "0"
-        labels:
-            kubernetes.io/hostname: kwok-node
-            kubernetes.io/role: agent
-            type: kwok
-        spec: {}
-        status:
-        allocatable:
-            cpu: 32
-            memory: 256Gi
-            pods: 110
-        capacity:
-            cpu: 32
-            memory: 256Gi
-            pods: 110
-        nodeInfo:
-            architecture: amd64
-            bootID: ""
-            containerRuntimeVersion: ""
-            kernelVersion: ""
-            kubeProxyVersion: fake
-            kubeletVersion: fake
-            machineID: ""
-            operatingSystem: linux
-            osImage: ""
-            systemUUID: ""
-        phase: Running
-   ```
+**Delete the APIs(CRDs) from the cluster:**
 
-2. Apply the NodePool CR to your Kubernetes cluster:
+```sh
+make uninstall
+```
 
-   ```shell
-   kubectl apply -f path/to/your/nodepool.yaml
-   ```
+**UnDeploy the controller from the cluster:**
 
-3. Monitor the status of the created virtual nodes using:
-   ```shell
-   kubectl get nodes 
-   ```
-
-## Configuration
-
-The Kwok Operator can be configured via the NodePool CR.
-   ```shell
-   kubectl edit nodepool nodepool-sample
-   ```
-
-## Troubleshooting
-
-If you encounter any issues with the Kwok Operator, please check the following:
-
-- Ensure that the Kwok is infrastructure properly configured and accessible from the Kubernetes cluster. 
-  https://kwok.sigs.k8s.io/docs/user/kwok-in-cluster/
-- Check the logs of the Kwok Operator pod for any error messages under namespace kwok-operaotr.
+```sh
+make undeploy
+```
 
 ## Contributing
+// TODO(user): Add detailed information on how you would like others to contribute to this project
 
-Contributions to the Kwok Operator are welcome! To contribute, please follow the guidelines outlined in [CONTRIBUTING.md](./CONTRIBUTING.md).
+**NOTE:** Run `make help` for more information on all potential `make` targets
 
----
+More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
 
-Feel free to customize and expand upon this template to suit your specific needs and preferences!
+## License
+
+Copyright 2024.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+

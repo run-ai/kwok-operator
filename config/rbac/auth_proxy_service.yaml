@@ -2,15 +2,15 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
-    control-plane: kwok-operator
+    control-plane: controller-manager
     app.kubernetes.io/name: service
-    app.kubernetes.io/instance: kwok-operator-metrics-service
+    app.kubernetes.io/instance: controller-manager-metrics-service
     app.kubernetes.io/component: kube-rbac-proxy
     app.kubernetes.io/created-by: kwok-operator
     app.kubernetes.io/part-of: kwok-operator
     app.kubernetes.io/managed-by: kustomize
-  name: kwok-operator-metrics-service
-  namespace: kwok-operator
+  name: controller-manager-metrics-service
+  namespace: system
 spec:
   ports:
   - name: https
@@ -18,4 +18,4 @@ spec:
     protocol: TCP
     targetPort: https
   selector:
-    control-plane: kwok-operator
+    control-plane: controller-manager
