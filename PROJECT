@@ -21,3 +21,4 @@ resources:
   path: github.com/run-ai/kwok-operator/api/v1beta1
   version: v1beta1
 version: "3"
+
