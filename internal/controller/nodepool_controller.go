@@ -34,7 +34,7 @@ import (
 )
 
 const (
-	nodePoolFinalizer       = "kwok.sigs.k8s.io/finalizer"
+	nodePoolFinalizer       = "kwok.sigs.run-ai.com/finalizer"
 	nodePoolControllerLabel = "kwok.x-k8s.io/controller"
 	nodePoolAnnotation      = "kwok.x-k8s.io/node"
 	fakeString              = "fake"
@@ -46,9 +46,9 @@ type NodePoolReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-//+kubebuilder:rbac:groups=kwok.sigs.k8s.io,resources=nodepools,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=kwok.sigs.k8s.io,resources=nodepools/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=kwok.sigs.k8s.io,resources=nodepools/finalizers,verbs=update
+//+kubebuilder:rbac:groups=kwok.sigs.run-ai.com,resources=nodepools,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=kwok.sigs.run-ai.com,resources=nodepools/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=kwok.sigs.run-ai.com,resources=nodepools/finalizers,verbs=update
 
 func (r *NodePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
