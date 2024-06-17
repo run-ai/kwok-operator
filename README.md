@@ -126,3 +126,11 @@ If you encounter any issues with the Kwok Operator, please check the following:
 - Ensure that the Kwok is infrastructure properly configured and accessible from the Kubernetes cluster. 
   https://kwok.sigs.k8s.io/docs/user/kwok-in-cluster/
 - Check the logs of the Kwok Operator pod for any error messages under namespace kwok-operaotr.
+
+## Contributing
+
+Contributions to the Kwok Operator are welcome! To contribute, please follow the guidelines outlined in [CONTRIBUTING.md](./CONTRIBUTING.md).
+
+---
+
+Feel free to customize and expand upon this template to suit your specific needs and preferences!
