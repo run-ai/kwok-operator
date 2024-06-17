@@ -18,8 +18,6 @@ spec:
       labels:
         kubernetes.io/hostname: kwok-node
         kubernetes.io/role: agent
-        nvidia.com/gpu.deploy.device-plugin: "true"
-        nvidia.com/gpu.deploy.dcgm-exporter: "true"
         type: kwok
     spec: {}
     status:
