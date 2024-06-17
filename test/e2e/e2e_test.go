@@ -27,7 +27,7 @@ import (
 	"github.com/run-ai/kwok-operator/test/utils"
 )
 
-const namespace = "kwok-operator-system"
+const namespace = "kwok-operator"
 
 var _ = Describe("controller", Ordered, func() {
 	BeforeAll(func() {
