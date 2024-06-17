@@ -146,6 +146,7 @@ spec:
                         items:
                           type: string
                         type: array
+                        x-kubernetes-list-type: set
                       providerID:
                         description: 'ID of the node assigned by the cloud provider
                           in the format: <ProviderName>://<ProviderSpecificNodeID>'
@@ -182,6 +183,7 @@ spec:
                           - key
                           type: object
                         type: array
+                        x-kubernetes-list-type: atomic
                       unschedulable:
                         description: |-
                           Unschedulable controls node schedulability of new pods. By default, node is schedulable.
@@ -223,6 +225,9 @@ spec:
                           - type
                           type: object
                         type: array
+                        x-kubernetes-list-map-keys:
+                        - type
+                        x-kubernetes-list-type: map
                       allocatable:
                         additionalProperties:
                           anyOf:
@@ -282,6 +287,9 @@ spec:
                           - type
                           type: object
                         type: array
+                        x-kubernetes-list-map-keys:
+                        - type
+                        x-kubernetes-list-type: map
                       config:
                         description: Status of the config assigned to the node via
                           the dynamic Kubelet config feature.
@@ -465,12 +473,14 @@ spec:
                               items:
                                 type: string
                               type: array
+                              x-kubernetes-list-type: atomic
                             sizeBytes:
                               description: The size of the image in bytes.
                               format: int64
                               type: integer
                           type: object
                         type: array
+                        x-kubernetes-list-type: atomic
                       nodeInfo:
                         description: |-
                           Set of ids/uuids to uniquely identify the node.
@@ -533,6 +543,28 @@ spec:
                           More info: https://kubernetes.io/docs/concepts/nodes/node/#phase
                           The field is never populated, and now is deprecated.
                         type: string
+                      runtimeHandlers:
+                        description: The available runtime handlers.
+                        items:
+                          description: NodeRuntimeHandler is a set of runtime handler
+                            information.
+                          properties:
+                            features:
+                              description: Supported features.
+                              properties:
+                                recursiveReadOnlyMounts:
+                                  description: RecursiveReadOnlyMounts is set to true
+                                    if the runtime handler supports RecursiveReadOnlyMounts.
+                                  type: boolean
+                              type: object
+                            name:
+                              description: |-
+                                Runtime handler name.
+                                Empty for the default runtime handler.
+                              type: string
+                          type: object
+                        type: array
+                        x-kubernetes-list-type: atomic
                       volumesAttached:
                         description: List of volumes that are attached to the node.
                         items:
@@ -551,12 +583,14 @@ spec:
                           - name
                           type: object
                         type: array
+                        x-kubernetes-list-type: atomic
                       volumesInUse:
                         description: List of attachable volumes in use (mounted) by
                           the node.
                         items:
                           type: string
                         type: array
+                        x-kubernetes-list-type: atomic
                     type: object
                 type: object
             required:
