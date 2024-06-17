@@ -9,4 +9,37 @@ metadata:
     app.kubernetes.io/created-by: kwok-operator
   name: nodepool-sample
 spec:
-  # TODO(user): Add fields here
+  nodeCount: 15
+  nodeTemplate:
+    apiVersion: v1
+    metadata:
+      annotations:
+        node.alpha.kubernetes.io/ttl: "0"
+      labels:
+        kubernetes.io/hostname: kwok-node
+        kubernetes.io/role: agent
+        nvidia.com/gpu.deploy.device-plugin: "true"
+        nvidia.com/gpu.deploy.dcgm-exporter: "true"
+        type: kwok
+    spec: {}
+    status:
+      allocatable:
+        cpu: 32
+        memory: 256Gi
+        pods: 110
+      capacity:
+        cpu: 32
+        memory: 256Gi
+        pods: 110
+      nodeInfo:
+        architecture: amd64
+        bootID: ""
+        containerRuntimeVersion: ""
+        kernelVersion: ""
+        kubeProxyVersion: fake
+        kubeletVersion: fake
+        machineID: ""
+        operatingSystem: linux
+        osImage: ""
+        systemUUID: ""
+      phase: Running

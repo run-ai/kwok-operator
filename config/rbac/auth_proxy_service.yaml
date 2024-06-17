@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/part-of: kwok-operator
     app.kubernetes.io/managed-by: kustomize
   name: kwok-operator-metrics-service
-  namespace: system
+  namespace: kwok-operator
 spec:
   ports:
   - name: https
