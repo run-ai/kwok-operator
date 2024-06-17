@@ -60,7 +60,7 @@ To use the Kwok Operator, follow these steps:
 1. Define a NodePool custom resource (CR) with your desired configuration. Example:
 
    ```yaml
-    apiVersion: kwok.sigs.k8s.io/v1beta1
+    apiVersion: kwok.sigs.run-ai.com/v1beta1
     kind: NodePool
     metadata:
     labels:
