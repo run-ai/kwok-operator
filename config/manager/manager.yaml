@@ -9,13 +9,13 @@ metadata:
     app.kubernetes.io/created-by: kwok-operator
     app.kubernetes.io/part-of: kwok-operator
     app.kubernetes.io/managed-by: kustomize
-  name: system
+  name: kwok-operator
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kwok-operator
-  namespace: system
+  namespace: kwok-operator
   labels:
     control-plane: kwok-operator
     app.kubernetes.io/name: deployment
@@ -98,5 +98,5 @@ spec:
           requests:
             cpu: 10m
             memory: 64Mi
-      serviceAccountName: kwok-operator
+      serviceAccountName: kwok-operator-sa
       terminationGracePeriodSeconds: 10
