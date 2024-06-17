@@ -36,7 +36,6 @@ type NodePoolStatus struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:scope=Cluster
-//+kubebuilder:metadata:annotations="api-approved.kubernetes.io=https://github.com/kubernetes-sigs/controller-tools"
 
 // NodePool is the Schema for the nodepools API
 type NodePool struct {
