@@ -25,7 +25,7 @@ The Kwok operator test on top the following kuberenetes flavors
 
 Before using the Kwok Operator, ensure you have the following prerequisites installed:
 
-- Kubernetes cluster (version 1.24 or later)
+- tested on Kubernetes cluster (version 1.24 or later)
 - Kwok infrastructure set up and accessible from the cluster
 - kubectl CLI installed and configured to access the Kubernetes cluster
 
