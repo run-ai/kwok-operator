@@ -5,9 +5,9 @@ metadata:
   annotations:
     api-approved.kubernetes.io: https://github.com/kubernetes-sigs/controller-tools
     controller-gen.kubebuilder.io/version: v0.15.0
-  name: nodepools.kwok.sigs.run-ai.com
+  name: nodepools.kwok.sigs.k8s.io
 spec:
-  group: kwok.sigs.run-ai.com
+  group: kwok.sigs.k8s.io
   names:
     kind: NodePool
     listKind: NodePoolList

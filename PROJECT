@@ -2,7 +2,7 @@
 # This file is used to track the info used to scaffold your project
 # and allow the plugins properly work.
 # More info: https://book.kubebuilder.io/reference/project-config.html
-domain: run-ai.com
+domain: k8s.io
 layout:
 - go.kubebuilder.io/v4
 plugins:
@@ -15,7 +15,7 @@ resources:
     crdVersion: v1
     namespaced: true
   controller: true
-  domain: run-ai.com
+  domain: k8s.io
   group: kwok.sigs
   kind: NodePool
   path: github.com/run-ai/kwok-operator/api/v1beta1

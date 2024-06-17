@@ -18,6 +18,9 @@ package controller
 
 import (
 	"context"
+	"strings"
+	"time"
+
 	kwoksigsv1beta1 "github.com/run-ai/kwok-operator/api/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -28,12 +31,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"strings"
-	"time"
 )
 
 const (
-	nodePoolFinalizer       = "kwok.sigs.run-ai.com/finalizer"
+	nodePoolFinalizer       = "kwok.sigs.k8s.io/finalizer"
 	nodePoolControllerLabel = "kwok.x-k8s.io/controller"
 	nodePoolAnnotation      = "kwok.x-k8s.io/node"
 	fakeString              = "fake"
@@ -45,9 +46,9 @@ type NodePoolReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-//+kubebuilder:rbac:groups=kwok.sigs.run-ai.com,resources=nodepools,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=kwok.sigs.run-ai.com,resources=nodepools/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=kwok.sigs.run-ai.com,resources=nodepools/finalizers,verbs=update
+//+kubebuilder:rbac:groups=kwok.sigs.k8s.io,resources=nodepools,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=kwok.sigs.k8s.io,resources=nodepools/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=kwok.sigs.k8s.io,resources=nodepools/finalizers,verbs=update
 
 func (r *NodePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)

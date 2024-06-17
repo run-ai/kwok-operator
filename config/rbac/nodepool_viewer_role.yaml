@@ -12,7 +12,7 @@ metadata:
   name: nodepool-viewer-role
 rules:
 - apiGroups:
-  - kwok.sigs.run-ai.com
+  - kwok.sigs.k8s.io
   resources:
   - nodepools
   verbs:
@@ -20,7 +20,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - kwok.sigs.run-ai.com
+  - kwok.sigs.k8s.io
   resources:
   - nodepools/status
   verbs:
