@@ -31,7 +31,7 @@ Before using the Kwok Operator, ensure you have the following prerequisites inst
 
 ## Installation
 
-To install the Kwok Operator, follow these steps:
+To install Kwok CRDs and the Kwok Operator, follow these steps:
 
 1. Clone the Kwok Operator repository:
 
@@ -48,9 +48,9 @@ To install the Kwok Operator, follow these steps:
    ./install_kwok.sh
    ```
 
-3. Apply the Kubernetes manifests:
+3. Apply the kwok-operator Kubernetes manifests:
    ```shell
-   kubectl apply -k config/default
+   kubectl apply -k config/default or run the command kubectl apply -f https://github.com/run-ai/kwok-operator/releases/download/0.0.1/kwok-operator.yaml
    ```
 
 ## Usage
