@@ -102,7 +102,9 @@ func (r *DeploymentPoolReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	// Get Deployment in the cluster with owner reference to the DeploymentPool
 	deployment, err := r.getDeployment(ctx, deploymentPool)
+	log.Info("Deployment is here", "Deployment", deployment)
 	if err != nil {
+		log.Info("Deployment not found", "DeploymentPool", deploymentPool)
 		log.Error(err, "unable to fetch Deployment name", "DeploymentPool", deployment)
 		return ctrl.Result{}, err
 	}
@@ -151,31 +153,32 @@ func (r *DeploymentPoolReconciler) getDeployment(ctx context.Context, deployment
 
 // create deployment
 func (r *DeploymentPoolReconciler) createDeployment(ctx context.Context, deploymentPool *kwoksigsv1beta1.DeploymentPool) error {
-	podTolerations := deploymentPool.Spec.DeploymentTemplate.Spec.Template.Spec.Tolerations
-	if podTolerations == nil {
-		podTolerations = []corev1.Toleration{}
+	deploymentToleration := deploymentPool.Spec.DeploymentTemplate.Spec.Template.Spec.Tolerations
+	if deploymentToleration == nil {
+		log.Log.Info("Pod tolerations is nil")
+		deploymentToleration = make([]corev1.Toleration, 0)
 	}
-	deploymentPool.Spec = kwoksigsv1beta1.DeploymentPoolSpec{
-		DeploymentTemplate: appsv1.Deployment{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      deploymentPool.Name,
-				Namespace: deploymentPool.Namespace,
-			},
-			Spec: deploymentPool.Spec.DeploymentTemplate.Spec,
-		},
-	}
-
-	deploymentPool.OwnerReferences = []metav1.OwnerReference{
-		*metav1.NewControllerRef(deploymentPool, deploymentPool.GroupVersionKind()),
-	}
-
-	deploymentPool.Spec.DeploymentTemplate.Spec.Template.Spec.Tolerations = append(podTolerations, corev1.Toleration{
+	deploymentToleration = append(deploymentToleration, corev1.Toleration{
 		Key:      controllerAnnotation,
+		Value:    fakeString,
 		Operator: corev1.TolerationOpExists,
 		Effect:   corev1.TaintEffectNoSchedule,
 	})
+	deployment := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: deploymentPool.Name + "-",
+			OwnerReferences: []metav1.OwnerReference{
+				*metav1.NewControllerRef(deploymentPool, kwoksigsv1beta1.GroupVersion.WithKind("DeploymentPool")),
+			},
+			Name:      deploymentPool.Name,
+			Namespace: deploymentPool.Namespace,
+		},
+		Spec: deploymentPool.Spec.DeploymentTemplate.Spec,
+	}
+	deployment.Spec.Template.Spec.Tolerations = deploymentToleration
 
-	err := r.Create(ctx, deploymentPool)
+	log.Log.Info("present entire object", "DeploymentPool", deploymentPool)
+	err := r.Create(ctx, deployment)
 	if err != nil {
 		return err
 	}

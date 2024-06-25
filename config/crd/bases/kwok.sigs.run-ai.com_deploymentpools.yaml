@@ -39,7 +39,7 @@ spec:
           spec:
             description: DeploymentPoolSpec defines the desired state of DeploymentPool
             properties:
-              DeploymentTemplate:
+              deploymentTemplate:
                 description: Deployment enables declarative updates for Pods and ReplicaSets.
                 properties:
                   apiVersion:
@@ -7711,7 +7711,7 @@ spec:
                     type: object
                 type: object
             required:
-            - DeploymentTemplate
+            - deploymentTemplate
             type: object
           status:
             description: DeploymentPoolStatus defines the observed state of DeploymentPool
