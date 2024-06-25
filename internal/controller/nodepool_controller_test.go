@@ -237,7 +237,7 @@ func assertNodeCount(t *testing.T, c client.Client, nodeName string, expectedNod
 	assert.NoError(t, err, "failed to list nodes")
 	count := 0
 	for _, node := range nodes.Items {
-		if node.Labels[nodePoolControllerLabel] == nodeName {
+		if node.Labels[controllerLabel] == nodeName {
 			count++
 		}
 	}
@@ -293,7 +293,7 @@ func TestNodeTemplateChange(t *testing.T) {
 
 	// Verify that the nodes have the correct labels
 	for _, node := range nodes.Items {
-		if node.Labels[nodePoolControllerLabel] == nodePool.Name {
+		if node.Labels[controllerLabel] == nodePool.Name {
 			assert.Equal(t, nodePool.Spec.NodeTemplate.Labels[kubernetesRoleLabel], "test-nodepool", "unexpected node labels")
 		}
 	}
@@ -329,7 +329,7 @@ func TestNodeTemplateChange(t *testing.T) {
 	assert.NoError(t, err, "failed to get NodePool object")
 
 	for _, node := range nodes.Items {
-		if node.Labels[nodePoolControllerLabel] == nodePool.Name {
+		if node.Labels[controllerLabel] == nodePool.Name {
 			assert.Equal(t, nodePool.Spec.NodeTemplate.Labels[kubernetesRoleLabel], "test-nodepool2", "unexpected node labels")
 		}
 	}
