@@ -254,7 +254,7 @@ func (r *DeploymentPoolReconciler) createDeployment(ctx context.Context, deploym
 	if deploymentToleration == nil {
 		deploymentToleration = make([]corev1.Toleration, 0)
 	}
-	
+
 	deploymentToleration = append(deploymentToleration, corev1.Toleration{
 		Key:      controllerAnnotation,
 		Operator: corev1.TolerationOpExists,
