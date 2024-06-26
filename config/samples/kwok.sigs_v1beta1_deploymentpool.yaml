@@ -21,7 +21,7 @@ spec:
     spec:
       replicas: 3
       selector:
-        matchLabels:
+        matchLabels: 
           app.kubernetes.io/name: deployment
           app.kubernetes.io/instance: deployment-sample
           app.kubernetes.io/part-of: kwok-operator
