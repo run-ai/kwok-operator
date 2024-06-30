@@ -233,7 +233,6 @@ func (r *DeploymentPoolReconciler) updateDeployment(ctx context.Context, deploym
 		return err
 	}
 	return nil
-
 }
 
 // create deployment

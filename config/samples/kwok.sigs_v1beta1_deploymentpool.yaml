@@ -8,10 +8,12 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/created-by: kwok-operator
   name: deploymentpool-sample
+  namespace: default
 spec:  
   deploymentTemplate:
-    apiVersion: apps/v1   
+    apiVersion: apps/v1 
     metadata:
+      name: kwok-operator
       labels:
         app.kubernetes.io/name: deployment
         app.kubernetes.io/instance: deployment-sample
