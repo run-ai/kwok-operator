@@ -50,7 +50,7 @@ To install Kwok CRDs and the Kwok Operator, follow these steps:
 
 3. Apply the kwok-operator Kubernetes manifests:
    ```shell
-   kubectl create -k config/default or run the command kubectl apply -f https://github.com/run-ai/kwok-operator/releases/download/0.0.2/kwok-operator.yaml
+   kubectl apply --server-side -k config/default or run the command kubectl apply --server-side -f https://github.com/run-ai/kwok-operator/releases/download/0.0.2/kwok-operator.yaml
    ```
 
 ## Usage
