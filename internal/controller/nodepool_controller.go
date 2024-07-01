@@ -33,13 +33,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-const (
-	nodePoolFinalizer       = "kwok.sigs.run-ai.com/finalizer"
-	nodePoolControllerLabel = "kwok.x-k8s.io/controller"
-	nodePoolAnnotation      = "kwok.x-k8s.io/node"
-	fakeString              = "fake"
-)
-
 // NodePoolReconciler reconciles a NodePool object
 type NodePoolReconciler struct {
 	client.Client
@@ -85,7 +78,7 @@ func (r *NodePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		}
 	}
 	// Add finalizer to the NodePool
-	if !controllerutil.ContainsFinalizer(nodePool, nodePoolFinalizer) {
+	if !controllerutil.ContainsFinalizer(nodePool, controllerFinalizer) {
 		log.Info("Adding Finalizer for the NodePool")
 		err := r.addFinalizer(ctx, nodePool)
 		if err != nil {
@@ -232,7 +225,7 @@ func (r *NodePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 
 func (r *NodePoolReconciler) getNodes(ctx context.Context, nodePool *kwoksigsv1beta1.NodePool) ([]corev1.Node, error) {
 	nodes := &corev1.NodeList{}
-	err := r.List(ctx, nodes, client.InNamespace(nodePool.Namespace), client.MatchingLabels{nodePoolControllerLabel: nodePool.Name})
+	err := r.List(ctx, nodes, client.InNamespace(nodePool.Namespace), client.MatchingLabels{controllerLabel: nodePool.Name})
 	if err != nil && strings.Contains(err.Error(), "does not exist") {
 		return []corev1.Node{}, nil
 	} else if err != nil {
@@ -248,13 +241,13 @@ func (r *NodePoolReconciler) createNodes(ctx context.Context, nodePool *kwoksigs
 	if nodeLabels == nil {
 		nodeLabels = make(map[string]string)
 	}
-	nodeLabels[nodePoolControllerLabel] = nodePool.Name
+	nodeLabels[controllerLabel] = nodePool.Name
 	nodeTaint := nodePool.Spec.NodeTemplate.Spec.Taints
 	if nodeTaint == nil {
 		nodeTaint = make([]corev1.Taint, 0)
 	}
 	nodeTaint = append(nodeTaint, corev1.Taint{
-		Key:    nodePoolAnnotation,
+		Key:    controllerAnnotation,
 		Value:  fakeString,
 		Effect: corev1.TaintEffectNoSchedule,
 	})
@@ -262,7 +255,7 @@ func (r *NodePoolReconciler) createNodes(ctx context.Context, nodePool *kwoksigs
 	if nodeAnnotation == nil {
 		nodeAnnotation = make(map[string]string)
 	}
-	nodeAnnotation[nodePoolAnnotation] = fakeString
+	nodeAnnotation[controllerAnnotation] = fakeString
 	for i := int32(len(nodes)); i < nodePool.Spec.NodeCount; i++ {
 		// Create a new node
 		node := &corev1.Node{
@@ -309,13 +302,13 @@ func (r *NodePoolReconciler) deleteNodes(ctx context.Context, nodePool *kwoksigs
 
 // Add the finalizer to the NodePool
 func (r *NodePoolReconciler) addFinalizer(ctx context.Context, nodePool *kwoksigsv1beta1.NodePool) error {
-	controllerutil.AddFinalizer(nodePool, nodePoolFinalizer)
+	controllerutil.AddFinalizer(nodePool, controllerFinalizer)
 	return r.Update(ctx, nodePool)
 }
 
 // Delete the finalizer from the NodePool
 func (r *NodePoolReconciler) deleteFinalizer(ctx context.Context, nodePool *kwoksigsv1beta1.NodePool) error {
-	controllerutil.RemoveFinalizer(nodePool, nodePoolFinalizer)
+	controllerutil.RemoveFinalizer(nodePool, controllerFinalizer)
 	return r.Update(ctx, nodePool)
 }
 

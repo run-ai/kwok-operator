@@ -30,7 +30,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -88,8 +88,6 @@ var _ = Describe("NodePool Controller", func() {
 				NamespacedName: typeNamespacedName,
 			})
 			Expect(err).NotTo(HaveOccurred())
-			// TODO(user): Add more specific assertions depending on your controller's reconciliation logic.
-			// Example: If you expect a certain status condition after reconciliation, verify it here.
 		})
 	})
 })
@@ -237,7 +235,7 @@ func assertNodeCount(t *testing.T, c client.Client, nodeName string, expectedNod
 	assert.NoError(t, err, "failed to list nodes")
 	count := 0
 	for _, node := range nodes.Items {
-		if node.Labels[nodePoolControllerLabel] == nodeName {
+		if node.Labels[controllerLabel] == nodeName {
 			count++
 		}
 	}
@@ -293,7 +291,7 @@ func TestNodeTemplateChange(t *testing.T) {
 
 	// Verify that the nodes have the correct labels
 	for _, node := range nodes.Items {
-		if node.Labels[nodePoolControllerLabel] == nodePool.Name {
+		if node.Labels[controllerLabel] == nodePool.Name {
 			assert.Equal(t, nodePool.Spec.NodeTemplate.Labels[kubernetesRoleLabel], "test-nodepool", "unexpected node labels")
 		}
 	}
@@ -329,16 +327,8 @@ func TestNodeTemplateChange(t *testing.T) {
 	assert.NoError(t, err, "failed to get NodePool object")
 
 	for _, node := range nodes.Items {
-		if node.Labels[nodePoolControllerLabel] == nodePool.Name {
+		if node.Labels[controllerLabel] == nodePool.Name {
 			assert.Equal(t, nodePool.Spec.NodeTemplate.Labels[kubernetesRoleLabel], "test-nodepool2", "unexpected node labels")
 		}
 	}
-}
-
-// setupScheme sets up the scheme for the tests
-func setupScheme() *runtime.Scheme {
-	scheme := runtime.NewScheme()
-	_ = v1beta1.AddToScheme(scheme)
-	_ = corev1.AddToScheme(scheme)
-	return scheme
 }

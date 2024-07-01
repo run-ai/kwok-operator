@@ -50,12 +50,12 @@ To install Kwok CRDs and the Kwok Operator, follow these steps:
 
 3. Apply the kwok-operator Kubernetes manifests:
    ```shell
-   kubectl apply -k config/default or run the command kubectl apply -f https://github.com/run-ai/kwok-operator/releases/download/0.0.1/kwok-operator.yaml
+   kubectl apply --server-side -k config/default or run the command kubectl apply --server-side -f https://github.com/run-ai/kwok-operator/releases/download/0.0.2/kwok-operator.yaml
    ```
 
 ## Usage
 
-To use the Kwok Operator, follow these steps:
+To use the Kwok Operator to provision nodes, follow these steps:
 
 1. Define a NodePool custom resource (CR) with your desired configuration. Example:
 
@@ -119,7 +119,58 @@ The Kwok Operator can be configured via the NodePool CR.
    kubectl edit nodepool nodepool-sample
    ```
 
-## Troubleshooting
+----
+To use the Kwok Operator to manage deployments and run the pods on top the nodes you provisioned above, follow these steps:
+1. ensure the namespace is exist  
+2. Define a DeploymentPool custom resource (CR) with your desired configuration. Example:
+```yaml
+   apiVersion: kwok.sigs.run-ai.com/v1beta1
+   kind: DeploymentPool
+   metadata:
+   labels:
+      app.kubernetes.io/name: deploymentpool
+      app.kubernetes.io/instance: deploymentpool-sample
+      app.kubernetes.io/part-of: kwok-operator
+      app.kubernetes.io/managed-by: kustomize
+      app.kubernetes.io/created-by: kwok-operator
+   name: deploymentpool-sample
+   namespace: default # -----> change if needed 
+   spec:  
+   deploymentTemplate:
+      apiVersion: apps/v1 
+      metadata:
+         name: kwok-operator
+         labels:
+         app.kubernetes.io/name: deployment
+         app.kubernetes.io/instance: deployment-sample
+         app.kubernetes.io/part-of: kwok-operator
+         app.kubernetes.io/managed-by: kustomize
+         app.kubernetes.io/created-by: kwok-operator
+      spec:
+         replicas: 3
+         selector:
+         matchLabels: 
+            app.kubernetes.io/name: deployment
+            app.kubernetes.io/instance: deployment-sample
+            app.kubernetes.io/part-of: kwok-operator
+            app.kubernetes.io/managed-by: kustomize
+            app.kubernetes.io/created-by: kwok-operator
+         template:
+         metadata:
+            labels:
+               app.kubernetes.io/name: deployment
+               app.kubernetes.io/instance: deployment-sample
+               app.kubernetes.io/part-of: kwok-operator
+               app.kubernetes.io/managed-by: kustomize
+               app.kubernetes.io/created-by: kwok-operator
+         spec:
+            containers:
+            - image: nginx
+               name: nginx
+            restartPolicy: Always
+   ```
+
+## Troubleshooting 
 
 If you encounter any issues with the Kwok Operator, please check the following:
 
