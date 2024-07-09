@@ -62,46 +62,50 @@ To use the Kwok Operator to provision nodes, follow these steps:
 
 1. Define a NodePool custom resource (CR) with your desired configuration. Example:
 
-   ```yaml
-    apiVersion: kwok.sigs.k8s.io/v1beta1
-    kind: NodePool
+```yaml
+apiVersion: kwok.sigs.run-ai.com/v1beta1
+kind: NodePool
+metadata:
+  labels:
+    app.kubernetes.io/name: nodepool
+    app.kubernetes.io/instance: nodepool-sample
+    app.kubernetes.io/part-of: kwok-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: kwok-operator
+  name: nodepool-sample
+spec:
+  nodeCount: 15
+  nodeTemplate:
+    apiVersion: v1
     metadata:
+      annotations:
+        node.alpha.kubernetes.io/ttl: "0"
       labels:
-         app.kubernetes.io/instance: nodepool-sample
-      name: nodepool-sample
-    spec:
-      nodeCount: 15
-      nodeTemplate:
-         apiVersion: v1
-         metadata:
-         annotations:
-            node.alpha.kubernetes.io/ttl: "0"
-         labels:
-            kubernetes.io/hostname: kwok-node
-            kubernetes.io/role: agent
-            type: kwok
-         spec: {}
-         status:
-         allocatable:
-            cpu: 32
-            memory: 256Gi
-            pods: 110
-         capacity:
-            cpu: 32
-            memory: 256Gi
-            pods: 110
-         nodeInfo:
-            architecture: amd64
-            bootID: ""
-            containerRuntimeVersion: ""
-            kernelVersion: ""
-            kubeProxyVersion: fake
-            kubeletVersion: fake
-            machineID: ""
-            operatingSystem: linux
-            osImage: ""
-            systemUUID: ""
-         phase: Running
+        kubernetes.io/hostname: kwok-node
+        kubernetes.io/role: agent
+        type: kwok
+    spec: {}
+    status:
+      allocatable:
+        cpu: 32
+        memory: 256Gi
+        pods: 110
+      capacity:
+        cpu: 32
+        memory: 256Gi
+        pods: 110
+      nodeInfo:
+        architecture: amd64
+        bootID: ""
+        containerRuntimeVersion: ""
+        kernelVersion: ""
+        kubeProxyVersion: fake
+        kubeletVersion: fake
+        machineID: ""
+        operatingSystem: linux
+        osImage: ""
+        systemUUID: ""
+      phase: Running
    ```
 
 2. Apply the NodePool CR to your Kubernetes cluster:
@@ -127,82 +131,81 @@ To use the Kwok Operator to manage deployments and run the pods on top the nodes
 1. ensure the namespace is exist  
 2. Define a DeploymentPool custom resource (CR) with your desired configuration. Example:
 ```yaml
-   apiVersion: kwok.sigs.run-ai.com/v1beta1
-   kind: DeploymentPool
-   metadata:
+apiVersion: kwok.sigs.run-ai.com/v1beta1
+kind: DeploymentPool
+metadata:
+  labels:
+    app.kubernetes.io/name: deploymentpool
+    app.kubernetes.io/instance: deploymentpool-sample
+    app.kubernetes.io/part-of: kwok-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: kwok-operator
+  name: deploymentpool-sample
+  namespace: default
+spec:  
+  deploymentTemplate:
+    apiVersion: apps/v1 
+    metadata:
+      name: kwok-operator
       labels:
-         app.kubernetes.io/name: deploymentpool
-         app.kubernetes.io/instance: deploymentpool-sample
-         app.kubernetes.io/part-of: kwok-operator
-         app.kubernetes.io/managed-by: kustomize
-         app.kubernetes.io/created-by: kwok-operator
-      name: deploymentpool-sample
-      namespace: default # -----> change if needed 
-   spec:  
-   deploymentTemplate:
-      apiVersion: apps/v1 
-      metadata:
-         name: kwok-operator
-         labels:
-         app.kubernetes.io/name: deployment
-         app.kubernetes.io/instance: deployment-sample
-         app.kubernetes.io/part-of: kwok-operator
-         app.kubernetes.io/managed-by: kustomize
-         app.kubernetes.io/created-by: kwok-operator
-      spec:
-         replicas: 3
-         selector:
-         matchLabels: 
+        app.kubernetes.io/name: deployment
+        app.kubernetes.io/instance: deployment-sample
+        app.kubernetes.io/part-of: kwok-operator
+        app.kubernetes.io/managed-by: kustomize
+        app.kubernetes.io/created-by: kwok-operator
+    spec:
+      replicas: 3
+      selector:
+        matchLabels: 
+          app.kubernetes.io/name: deployment
+          app.kubernetes.io/instance: deployment-sample
+          app.kubernetes.io/part-of: kwok-operator
+          app.kubernetes.io/managed-by: kustomize
+          app.kubernetes.io/created-by: kwok-operator
+      template:
+        metadata:
+          labels:
             app.kubernetes.io/name: deployment
             app.kubernetes.io/instance: deployment-sample
             app.kubernetes.io/part-of: kwok-operator
             app.kubernetes.io/managed-by: kustomize
             app.kubernetes.io/created-by: kwok-operator
-         template:
-         metadata:
-            labels:
-               app.kubernetes.io/name: deployment
-               app.kubernetes.io/instance: deployment-sample
-               app.kubernetes.io/part-of: kwok-operator
-               app.kubernetes.io/managed-by: kustomize
-               app.kubernetes.io/created-by: kwok-operator
-         spec:
-            containers:
-            - image: nginx
-               name: nginx
-            restartPolicy: Always
+        spec:
+          containers:
+          - image: nginx
+            name: nginx
+          restartPolicy: Always
    ```
 ---
 To use the Kwok Operator to manage pods on top the nodes you provisioned above, follow these steps:
 1. ensure the namespace is exist
 2. Define a PodPool custom resource (CR) with your desired configuration. Example:
 ```yaml
-   apiVersion: kwok.sigs.run-ai.com/v1beta1
-   kind: PodPool
-   metadata:
+apiVersion: kwok.sigs.run-ai.com/v1beta1
+kind: PodPool
+metadata:
+  labels:
+    app.kubernetes.io/name: podpool
+    app.kubernetes.io/instance: podpool-sample
+    app.kubernetes.io/part-of: kwok-operator
+    app.kubernetes.io/created-by: kwok-operator
+  name: podpool-sample
+spec:
+  podCount: 5
+  podTemplate:
+    metadata:
+      name: kwok-operator
       labels:
-         app.kubernetes.io/name: podpool
-         app.kubernetes.io/instance: podpool-sample
-         app.kubernetes.io/part-of: kwok-operator
-         app.kubernetes.io/created-by: kwok-operator
-      name: podpool-sample
-      namespace: default # -----> change if needed
-   spec:
-      podCount: 5
-      podTemplate:
-         metadata:
-            name: kwok-operator
-            labels:
-            app.kubernetes.io/name: pod
-            app.kubernetes.io/instance: pod-sample
-            app.kubernetes.io/part-of: kwok-operator
-            app.kubernetes.io/managed-by: kustomize
-            app.kubernetes.io/created-by: kwok-operator
-         spec:
-            containers:
-            - image: nginx
-            name: nginx
-            restartPolicy: Always
+        app.kubernetes.io/name: pod
+        app.kubernetes.io/instance: pod-sample
+        app.kubernetes.io/part-of: kwok-operator
+        app.kubernetes.io/managed-by: kustomize
+        app.kubernetes.io/created-by: kwok-operator
+    spec:
+      containers:
+      - image: nginx
+        name: nginx
+      restartPolicy: Always
 ```
 
 ## Troubleshooting 
