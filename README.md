@@ -54,7 +54,7 @@ To install Kwok CRDs and the Kwok Operator, follow these steps:
    ```
    or 
    ```shell
-   kubectl apply --server-side -f https://github.com/run-ai/kwok-operator/releases/download/0.0.2/kwok-operator.yaml
+   kubectl apply --server-side -f https://github.com/run-ai/kwok-operator/releases/download/0.0.3/kwok-operator.yaml
    ```
 ## Usage
 
@@ -66,31 +66,31 @@ To use the Kwok Operator to provision nodes, follow these steps:
     apiVersion: kwok.sigs.k8s.io/v1beta1
     kind: NodePool
     metadata:
-    labels:
-        app.kubernetes.io/instance: nodepool-sample
-    name: nodepool-sample
+      labels:
+         app.kubernetes.io/instance: nodepool-sample
+      name: nodepool-sample
     spec:
-    nodeCount: 15
-    nodeTemplate:
-        apiVersion: v1
-        metadata:
-        annotations:
+      nodeCount: 15
+      nodeTemplate:
+         apiVersion: v1
+         metadata:
+         annotations:
             node.alpha.kubernetes.io/ttl: "0"
-        labels:
+         labels:
             kubernetes.io/hostname: kwok-node
             kubernetes.io/role: agent
             type: kwok
-        spec: {}
-        status:
-        allocatable:
+         spec: {}
+         status:
+         allocatable:
             cpu: 32
             memory: 256Gi
             pods: 110
-        capacity:
+         capacity:
             cpu: 32
             memory: 256Gi
             pods: 110
-        nodeInfo:
+         nodeInfo:
             architecture: amd64
             bootID: ""
             containerRuntimeVersion: ""
@@ -101,7 +101,7 @@ To use the Kwok Operator to provision nodes, follow these steps:
             operatingSystem: linux
             osImage: ""
             systemUUID: ""
-        phase: Running
+         phase: Running
    ```
 
 2. Apply the NodePool CR to your Kubernetes cluster:
@@ -130,14 +130,14 @@ To use the Kwok Operator to manage deployments and run the pods on top the nodes
    apiVersion: kwok.sigs.run-ai.com/v1beta1
    kind: DeploymentPool
    metadata:
-   labels:
-      app.kubernetes.io/name: deploymentpool
-      app.kubernetes.io/instance: deploymentpool-sample
-      app.kubernetes.io/part-of: kwok-operator
-      app.kubernetes.io/managed-by: kustomize
-      app.kubernetes.io/created-by: kwok-operator
-   name: deploymentpool-sample
-   namespace: default # -----> change if needed 
+      labels:
+         app.kubernetes.io/name: deploymentpool
+         app.kubernetes.io/instance: deploymentpool-sample
+         app.kubernetes.io/part-of: kwok-operator
+         app.kubernetes.io/managed-by: kustomize
+         app.kubernetes.io/created-by: kwok-operator
+      name: deploymentpool-sample
+      namespace: default # -----> change if needed 
    spec:  
    deploymentTemplate:
       apiVersion: apps/v1 
@@ -172,6 +172,38 @@ To use the Kwok Operator to manage deployments and run the pods on top the nodes
                name: nginx
             restartPolicy: Always
    ```
+---
+To use the Kwok Operator to manage pods on top the nodes you provisioned above, follow these steps:
+1. ensure the namespace is exist
+2. Define a PodPool custom resource (CR) with your desired configuration. Example:
+```yaml
+   apiVersion: kwok.sigs.run-ai.com/v1beta1
+   kind: PodPool
+   metadata:
+      labels:
+         app.kubernetes.io/name: podpool
+         app.kubernetes.io/instance: podpool-sample
+         app.kubernetes.io/part-of: kwok-operator
+         app.kubernetes.io/created-by: kwok-operator
+      name: podpool-sample
+      namespace: default # -----> change if needed
+   spec:
+      podCount: 5
+      podTemplate:
+         metadata:
+            name: kwok-operator
+            labels:
+            app.kubernetes.io/name: pod
+            app.kubernetes.io/instance: pod-sample
+            app.kubernetes.io/part-of: kwok-operator
+            app.kubernetes.io/managed-by: kustomize
+            app.kubernetes.io/created-by: kwok-operator
+         spec:
+            containers:
+            - image: nginx
+            name: nginx
+            restartPolicy: Always
+```
 
 ## Troubleshooting 
 

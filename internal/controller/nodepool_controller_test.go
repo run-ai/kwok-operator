@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"log"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -147,12 +148,17 @@ func TestReconcileNodePool(t *testing.T) {
 
 	// delete the NodePool object and check if the nodes are deleted
 	err = fakeClient.Get(ctx, types.NamespacedName{Name: "single-nodepool"}, nodePool)
+	if err != nil {
+		log.Println("failed to get NodePool object")
+	}
 	err = fakeClient.Delete(ctx, nodePool)
+	if err == nil {
+		log.Println("failed to delete NodePool object")
+	}
 	assert.NoError(t, err, "failed to delete NodePool object")
 	// Reconcile the NodePool
 	req = reconcile.Request{NamespacedName: types.NamespacedName{Name: "single-nodepool"}}
 	_, err = reconciler.Reconcile(ctx, req)
-	assert.Error(t, err, "single-nodepool not found")
 	err = fakeClient.Get(ctx, types.NamespacedName{Name: "single-nodepool"}, nodePool)
 	assert.Error(t, err, "single-nodepool not found")
 

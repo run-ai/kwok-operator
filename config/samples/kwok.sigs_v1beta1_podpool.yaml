@@ -1,0 +1,25 @@
+apiVersion: kwok.sigs.run-ai.com/v1beta1
+kind: PodPool
+metadata:
+  labels:
+    app.kubernetes.io/name: podpool
+    app.kubernetes.io/instance: podpool-sample
+    app.kubernetes.io/part-of: kwok-operator
+    app.kubernetes.io/created-by: kwok-operator
+  name: podpool-sample
+spec:
+  podCount: 5
+  podTemplate:
+    metadata:
+      name: kwok-operator
+      labels:
+        app.kubernetes.io/name: pod
+        app.kubernetes.io/instance: pod-sample
+        app.kubernetes.io/part-of: kwok-operator
+        app.kubernetes.io/managed-by: kustomize
+        app.kubernetes.io/created-by: kwok-operator
+    spec:
+      containers:
+      - image: nginx
+        name: nginx
+      restartPolicy: Always

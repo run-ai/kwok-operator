@@ -207,16 +207,6 @@ func (r *NodePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			log.Error(err, "Failed to delete finalizer from NodePool")
 			return ctrl.Result{}, err
 		}
-		err = r.statusConditionController(ctx, nodePool, metav1.Condition{
-			Type:    "Available",
-			Status:  metav1.ConditionFalse,
-			Reason:  "Deleting",
-			Message: "Deleting the NodePool",
-		})
-		if err != nil {
-			log.Error(err, "Failed to update NodePool status")
-			return ctrl.Result{}, err
-		}
 		return ctrl.Result{}, nil
 	}
 	log.Info("Reconciliation completed successfully")
@@ -232,7 +222,6 @@ func (r *NodePoolReconciler) getNodes(ctx context.Context, nodePool *kwoksigsv1b
 		return nil, err
 	}
 	return nodes.Items, nil
-
 }
 
 // Create nodes in the cluster
