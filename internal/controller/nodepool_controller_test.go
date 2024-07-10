@@ -137,8 +137,10 @@ func TestReconcileNodePool(t *testing.T) {
 	// Update the NodePool object to have a single node
 
 	err = fakeClient.Get(ctx, types.NamespacedName{Name: "single-nodepool"}, nodePool)
+	assert.NoError(t, err, "failed to get NodePool object")
 	nodePool.Spec.NodeCount = 2
 	err = fakeClient.Update(ctx, nodePool)
+	assert.NoError(t, err, "failed to update NodePool object")
 	req = reconcile.Request{NamespacedName: types.NamespacedName{Name: "single-nodepool"}}
 	_, err = reconciler.Reconcile(ctx, req)
 	assert.NoError(t, err, "reconciliation failed")
