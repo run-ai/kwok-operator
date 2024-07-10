@@ -5,9 +5,22 @@ metadata:
   name: kwok-operator-cr
 rules:
 - apiGroups:
+  - apps
+  resources:
+  - deployments
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch
+  - create
+  - delete
+- apiGroups:
   - ""
   resources:
   - nodes
+  - pods
   verbs:
   - create
   - delete
@@ -20,6 +33,8 @@ rules:
   - kwok.sigs.run-ai.com
   resources:
   - nodepools
+  - deploymentpools
+  - podpools
   verbs:
   - create
   - delete
@@ -32,46 +47,19 @@ rules:
   - kwok.sigs.run-ai.com  
   resources:
   - nodepools/finalizers
+  - deploymentpools/finalizers
+  - podpools/finalizers
   verbs:
+  - get
+  - patch
   - update
 - apiGroups:
   - kwok.sigs.run-ai.com
   resources:
   - nodepools/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - kwok.sigs.run-ai.com
-  resources:
-  - deploymentpools
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - kwok.sigs.run-ai.com
-  resources:
   - deploymentpools/status
-  - deploymentpools/finalizers
+  - podpools/status  
   verbs:
   - get
   - patch
   - update
-- apiGroups:
-  - apps
-  resources:
-  - deployments
-  verbs:
-  - get
-  - list
-  - patch
-  - update
-  - watch
-  - create
-  - delete
