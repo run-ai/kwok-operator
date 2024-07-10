@@ -152,13 +152,13 @@ func TestReconcileNodePool(t *testing.T) {
 		log.Println("failed to get NodePool object")
 	}
 	err = fakeClient.Delete(ctx, nodePool)
-	if err == nil {
-		log.Println("failed to delete NodePool object")
+	if err != nil {
+		assert.NoError(t, err, "failed to delete NodePool object")
 	}
-	assert.NoError(t, err, "failed to delete NodePool object")
 	// Reconcile the NodePool
 	req = reconcile.Request{NamespacedName: types.NamespacedName{Name: "single-nodepool"}}
 	_, err = reconciler.Reconcile(ctx, req)
+	assert.NoError(t, err, "reconciliation failed")
 	err = fakeClient.Get(ctx, types.NamespacedName{Name: "single-nodepool"}, nodePool)
 	assert.Error(t, err, "single-nodepool not found")
 

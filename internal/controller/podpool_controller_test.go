@@ -77,7 +77,6 @@ var _ = Describe("PodPool Controller", func() {
 		})
 
 		AfterEach(func() {
-			// TODO(user): Cleanup logic after each test, like removing the resource instance.
 			resource := &kwoksigsv1beta1.PodPool{}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
 			Expect(err).NotTo(HaveOccurred())
@@ -100,7 +99,7 @@ var _ = Describe("PodPool Controller", func() {
 	})
 })
 
-//test for the controller of PodPool resource provision and deletion with fake client
+// test for the controller of PodPool resource provision and deletion with fake client
 func TestReconcilepodPool(t *testing.T) {
 	// Create a fake client
 	fakeClient := fake.NewClientBuilder().WithScheme(setupScheme()).WithStatusSubresource(&v1beta1.PodPool{}).Build()
