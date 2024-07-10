@@ -190,6 +190,7 @@ metadata:
     app.kubernetes.io/part-of: kwok-operator
     app.kubernetes.io/created-by: kwok-operator
   name: podpool-sample
+  namespace: default
 spec:
   podCount: 5
   podTemplate:

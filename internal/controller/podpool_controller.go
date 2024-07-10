@@ -88,7 +88,6 @@ func (r *PodPoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		}
 	}
 	// Get pods in the cluster with owner reference to the podPool
-
 	pods, err := r.getPods(ctx, podPool)
 	if err != nil {
 		log.Error(err, "Failed to get pods")

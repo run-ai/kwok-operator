@@ -96,14 +96,11 @@ var _ = Describe("PodPool Controller", func() {
 				NamespacedName: typeNamespacedName,
 			})
 			Expect(err).NotTo(HaveOccurred())
-			// TODO(user): Add more specific assertions depending on your controller's reconciliation logic.
-			// Example: If you expect a certain status condition after reconciliation, verify it here.
 		})
 	})
 })
 
 //test for the controller of PodPool resource provision and deletion with fake client
-
 func TestReconcilepodPool(t *testing.T) {
 	// Create a fake client
 	fakeClient := fake.NewClientBuilder().WithScheme(setupScheme()).WithStatusSubresource(&v1beta1.PodPool{}).Build()
