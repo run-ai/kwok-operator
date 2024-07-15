@@ -37,7 +37,6 @@ spec:
           metadata:
             type: object
           spec:
-            description: JobPoolSpec defines the desired state of JobPool
             properties:
               jobCount:
                 format: int32
