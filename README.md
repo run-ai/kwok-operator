@@ -209,6 +209,47 @@ spec:
       restartPolicy: Always
 ```
 
+To use the Kwok Operator to manage jobs on top the nodes you provisioned above, follow these steps:
+1. ensure the namespace is exist
+2. Define a JobPool custom resource (CR) with your desired configuration. Example:
+```yaml
+apiVersion: kwok.sigs.run-ai.com/v1beta1
+kind: JobPool
+metadata:
+  labels:
+    app.kubernetes.io/name: jobpool
+    app.kubernetes.io/instance: jobpool-sample
+    app.kubernetes.io/part-of: kwok-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: kwok-operator
+  name: jobpool-sample
+spec:
+  jobCount: 5
+  jobTemplate:
+    metadata:
+      name: kwok-operator
+      labels:
+        app.kubernetes.io/name: job
+        app.kubernetes.io/instance: job-sample
+        app.kubernetes.io/part-of: kwok-operator
+        app.kubernetes.io/managed-by: kustomize
+        app.kubernetes.io/created-by: kwok-operator
+    spec:
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: job
+            app.kubernetes.io/instance: job-sample
+            app.kubernetes.io/part-of: kwok-operator
+            app.kubernetes.io/managed-by: kustomize
+            app.kubernetes.io/created-by: kwok-operator
+        spec:
+          containers:
+          - name: job
+            image: busybox
+            command: ["sh", "-c", "echo Hello, Kubernetes! && sleep 3600"]
+          restartPolicy: Never
+```
 ## Troubleshooting 
 
 If you encounter any issues with the Kwok Operator, please check the following:
