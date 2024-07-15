@@ -299,15 +299,15 @@ func (r *PodPoolReconciler) createPods(ctx context.Context, podPool *kwoksigsv1b
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: podPool.Name + "-",
 				Namespace:    podPool.Namespace,
+				Labels:       podLabels,
+				Annotations:  podAnnotation,
 				OwnerReferences: []metav1.OwnerReference{
 					*metav1.NewControllerRef(podPool, kwoksigsv1beta1.GroupVersion.WithKind("PodPool")),
 				},
 			},
 			Spec: podPool.Spec.PodTemplate.Spec,
 		}
-		pod.Labels = podLabels
 		pod.Spec.Tolerations = podToleration
-		pod.ObjectMeta.Annotations = podAnnotation
 
 		err := r.Create(ctx, pod)
 		if err != nil {

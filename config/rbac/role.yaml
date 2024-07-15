@@ -5,6 +5,18 @@ metadata:
   name: kwok-operator-cr
 rules:
 - apiGroups:
+  - batch
+  resources:
+  - jobs
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch
+  - create
+  - delete
+- apiGroups:
   - apps
   resources:
   - deployments
@@ -35,6 +47,7 @@ rules:
   - nodepools
   - deploymentpools
   - podpools
+  - jobpools
   verbs:
   - create
   - delete
@@ -49,6 +62,7 @@ rules:
   - nodepools/finalizers
   - deploymentpools/finalizers
   - podpools/finalizers
+  - jobpools/finalizers
   verbs:
   - get
   - patch
@@ -58,7 +72,8 @@ rules:
   resources:
   - nodepools/status
   - deploymentpools/status
-  - podpools/status  
+  - podpools/status
+  - jobpools/status
   verbs:
   - get
   - patch

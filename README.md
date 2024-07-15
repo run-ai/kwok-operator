@@ -54,7 +54,7 @@ To install Kwok CRDs and the Kwok Operator, follow these steps:
    ```
    or 
    ```shell
-   kubectl apply --server-side -f https://github.com/run-ai/kwok-operator/releases/download/0.0.3/kwok-operator.yaml
+   kubectl apply --server-side -f https://github.com/run-ai/kwok-operator/releases/download/0.0.5/kwok-operator.yaml
    ```
 ## Usage
 
