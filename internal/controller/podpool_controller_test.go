@@ -103,7 +103,7 @@ var _ = Describe("PodPool Controller", func() {
 func TestReconcilepodPool(t *testing.T) {
 	// Create a fake client
 	fakeClient := fake.NewClientBuilder().WithScheme(setupScheme()).WithStatusSubresource(&v1beta1.PodPool{}).Build()
-	// Create a NodePool object for testing
+	// Create a podPool object for testing
 	podPool := &v1beta1.PodPool{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-podpool",

@@ -250,15 +250,16 @@ func (r *NodePoolReconciler) createNodes(ctx context.Context, nodePool *kwoksigs
 		node := &corev1.Node{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: nodePool.Name + "-",
+				Labels:       nodeLabels,
+				Annotations:  nodeAnnotation,
 				OwnerReferences: []metav1.OwnerReference{
 					*metav1.NewControllerRef(nodePool, kwoksigsv1beta1.GroupVersion.WithKind("NodePool")),
 				},
 			},
 			Spec: nodePool.Spec.NodeTemplate.Spec,
 		}
-		node.Labels = nodeLabels
 		node.Spec.Taints = nodeTaint
-		node.ObjectMeta.Annotations = nodeAnnotation
+		//node.ObjectMeta.Annotations = nodeAnnotation
 
 		err := r.Create(ctx, node)
 		if err != nil {
