@@ -241,7 +241,6 @@ func (r *JobPoolReconciler) updateObservedGeneration(ctx context.Context, jobPoo
 
 // create jobs for the JobPool
 func (r *JobPoolReconciler) createJobs(ctx context.Context, jobPool *kwoksigsv1beta1.JobPool, jobs []batchv1.Job) error {
-	manualSelector := true
 	jobLabels := jobPool.Spec.JobTemplate.Spec.Template.Labels
 	if jobLabels == nil {
 		jobLabels = make((map[string]string), 0)
@@ -277,13 +276,6 @@ func (r *JobPoolReconciler) createJobs(ctx context.Context, jobPool *kwoksigsv1b
 			Spec: jobPool.Spec.JobTemplate.Spec,
 		}
 		job.Spec.Template.Spec.Tolerations = jobToleration
-		job.Spec.ManualSelector = &manualSelector
-
-		job.Spec.Selector = &metav1.LabelSelector{
-			MatchLabels: map[string]string{
-				controllerLabel: jobPool.Name,
-			},
-		}
 		job.Spec.Template.ObjectMeta.Labels = jobLabels
 		err := r.Create(ctx, job)
 		if err != nil {
