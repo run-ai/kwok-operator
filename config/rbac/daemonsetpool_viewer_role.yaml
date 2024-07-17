@@ -1,0 +1,27 @@
+# permissions for end users to view daemonsetpools.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: daemonsetpool-viewer-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: kwok-operator
+    app.kubernetes.io/part-of: kwok-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: daemonsetpool-viewer-role
+rules:
+- apiGroups:
+  - kwok.sigs.run-ai.com
+  resources:
+  - daemonsetpools
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - kwok.sigs.run-ai.com
+  resources:
+  - daemonsetpools/status
+  verbs:
+  - get

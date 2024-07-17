@@ -54,7 +54,7 @@ To install Kwok CRDs and the Kwok Operator, follow these steps:
    ```
    or 
    ```shell
-   kubectl apply --server-side -f https://github.com/run-ai/kwok-operator/releases/download/0.0.5/kwok-operator.yaml
+   kubectl apply --server-side -f https://github.com/run-ai/kwok-operator/releases/download/0.0.7/kwok-operator.yaml
    ```
 ## Usage
 
@@ -249,6 +249,53 @@ spec:
             image: busybox
             command: ["sh", "-c", "echo Hello, Kubernetes! && sleep 3600"]
           restartPolicy: Never
+```
+To use the Kwok Operator to manage Daemonset on top the nodes you provisioned above, follow these steps:
+1. ensure the namespace is exist
+2. Define a DaemonsetPool custom resource (CR) with your desired configuration. Example:
+```yaml
+apiVersion: kwok.sigs.run-ai.com/v1beta1
+kind: DaemonsetPool
+metadata:
+  labels:
+    app.kubernetes.io/name: daemonsetpool
+    app.kubernetes.io/instance: daemonsetpool-sample
+    app.kubernetes.io/part-of: kwok-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: kwok-operator
+  name: daemonsetpool-sample
+  namespace: default
+spec:
+  daemonsetTemplate:
+    metadata:
+      name: kwok-operator
+      labels:
+        app.kubernetes.io/name: daemonset
+        app.kubernetes.io/instance: daemonset-sample
+        app.kubernetes.io/part-of: kwok-operator
+        app.kubernetes.io/managed-by: kustomize
+        app.kubernetes.io/created-by: kwok-operator
+    spec:
+      selector:
+        matchLabels: 
+          app.kubernetes.io/name: deployment
+          app.kubernetes.io/instance: deployment-sample
+          app.kubernetes.io/part-of: kwok-operator
+          app.kubernetes.io/managed-by: kustomize
+          app.kubernetes.io/created-by: kwok-operator
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: daemonset
+            app.kubernetes.io/instance: daemonset-sample
+            app.kubernetes.io/part-of: kwok-operator
+            app.kubernetes.io/managed-by: kustomize
+            app.kubernetes.io/created-by: kwok-operator
+        spec:
+          containers:
+          - image: nginx
+            name: nginx
+          restartPolicy: Always
 ```
 ## Troubleshooting 
 

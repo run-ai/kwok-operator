@@ -20,6 +20,7 @@ rules:
   - apps
   resources:
   - deployments
+  - daemonsets
   verbs:
   - get
   - list
@@ -46,6 +47,7 @@ rules:
   resources:
   - nodepools
   - deploymentpools
+  - daemonsetpools
   - podpools
   - jobpools
   verbs:
@@ -63,6 +65,7 @@ rules:
   - deploymentpools/finalizers
   - podpools/finalizers
   - jobpools/finalizers
+  - daemonsetpools/finalizers
   verbs:
   - get
   - patch
@@ -74,6 +77,7 @@ rules:
   - deploymentpools/status
   - podpools/status
   - jobpools/status
+  - daemonsetpools/status
   verbs:
   - get
   - patch

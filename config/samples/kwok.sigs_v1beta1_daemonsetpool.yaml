@@ -1,26 +1,25 @@
 apiVersion: kwok.sigs.run-ai.com/v1beta1
-kind: DeploymentPool
+kind: DaemonsetPool
 metadata:
   labels:
-    app.kubernetes.io/name: deploymentpool
-    app.kubernetes.io/instance: deploymentpool-sample
+    app.kubernetes.io/name: daemonsetpool
+    app.kubernetes.io/instance: daemonsetpool-sample
     app.kubernetes.io/part-of: kwok-operator
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/created-by: kwok-operator
-  name: deploymentpool-sample
+  name: daemonsetpool-sample
   namespace: default
-spec:  
-  deploymentTemplate:
+spec:
+  daemonsetTemplate:
     metadata:
       name: kwok-operator
       labels:
-        app.kubernetes.io/name: deployment
-        app.kubernetes.io/instance: deployment-sample
+        app.kubernetes.io/name: daemonset
+        app.kubernetes.io/instance: daemonset-sample
         app.kubernetes.io/part-of: kwok-operator
         app.kubernetes.io/managed-by: kustomize
         app.kubernetes.io/created-by: kwok-operator
     spec:
-      replicas: 3
       selector:
         matchLabels: 
           app.kubernetes.io/name: deployment
@@ -31,8 +30,8 @@ spec:
       template:
         metadata:
           labels:
-            app.kubernetes.io/name: deployment
-            app.kubernetes.io/instance: deployment-sample
+            app.kubernetes.io/name: daemonset
+            app.kubernetes.io/instance: daemonset-sample
             app.kubernetes.io/part-of: kwok-operator
             app.kubernetes.io/managed-by: kustomize
             app.kubernetes.io/created-by: kwok-operator
@@ -41,3 +40,6 @@ spec:
           - image: nginx
             name: nginx
           restartPolicy: Always
+        
+        
+
