@@ -4,4 +4,5 @@ resources:
 - kwok.sigs_v1beta1_deploymentpool.yaml
 - kwok.sigs_v1beta1_podpool.yaml
 - kwok.sigs_v1beta1_jobpool.yaml
+- kwok.sigs_v1beta1_daemonsetpool.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples

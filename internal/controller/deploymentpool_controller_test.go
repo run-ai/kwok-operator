@@ -234,18 +234,8 @@ func TestReconcileDeploymentPool(t *testing.T) {
 	if err != nil {
 		t.Fatalf("list DeploymentPool: (%v)", err)
 	}
-	// if len(dpList.Items) != 0 {
-	// 	t.Fatalf("DeploymentPool not deleted")
-	// }
-	// if err != nil {
-	// 	t.Fatalf("list DeploymentPool: (%v)", err)
-	// }
-	// list deployment and check if the deployment has been deleted
 	err = fakeClient.List(ctx, depList)
 	if err != nil {
 		t.Fatalf("list Deployment: (%v)", err)
 	}
-	// if len(depList.Items) != 0 {
-	// 	t.Fatalf("deployment not deleted: %v", depList.Items)
-	// }
 }
