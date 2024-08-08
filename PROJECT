@@ -56,4 +56,13 @@ resources:
   kind: DaemonsetPool
   path: github.com/run-ai/kwok-operator/api/v1beta1
   version: v1beta1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: run-ai.com
+  group: kwok.sigs
+  kind: StatefulsetPool
+  path: github.com/run-ai/kwok-operator/api/v1beta1
+  version: v1beta1
 version: "3"

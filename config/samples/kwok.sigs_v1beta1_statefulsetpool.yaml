@@ -1,0 +1,48 @@
+apiVersion: kwok.sigs.run-ai.com/v1beta1
+kind: StatefulsetPool
+metadata:
+  labels:
+    app.kubernetes.io/name: statefulsetpool
+    app.kubernetes.io/instance: statefulsetpool-sample
+    app.kubernetes.io/part-of: kwok-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: kwok-operator
+  name: statefulsetpool-sample
+spec:
+  createPV: true
+  StatefulsetTemplate:
+    metadata:
+      labels:
+        app.kubernetes.io/name: statefulsetpool
+        app.kubernetes.io/instance: statefulsetpool-sample
+        app.kubernetes.io/part-of: kwok-operator
+        app.kubernetes.io/managed-by: kustomize
+        app.kubernetes.io/created-by: kwok-operator
+    spec:
+      serviceName: "nginx"
+      replicas: 2
+      selector:
+        matchLabels:
+          app: nginx
+      template:
+        metadata:
+          labels:
+            app: nginx
+        spec:
+          containers:
+          - name: nginx
+            image: registry.k8s.io/nginx-slim:0.21
+            ports:
+            - containerPort: 80
+              name: web
+            volumeMounts:
+            - name: www
+              mountPath: /usr/share/nginx/html
+      volumeClaimTemplates:
+      - metadata:
+          name: www
+        spec:
+          accessModes: [ "ReadWriteOnce" ]
+          resources:
+            requests:
+              storage: 1Gi
