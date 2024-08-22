@@ -257,6 +257,7 @@ func (r *NodePoolReconciler) createNodes(ctx context.Context, nodePool *kwoksigs
 				},
 			},
 			Spec: nodePool.Spec.NodeTemplate.Spec,
+			Status: nodePool.Spec.NodeTemplate.Status,
 		}
 		node.Spec.Taints = nodeTaint
 		//node.ObjectMeta.Annotations = nodeAnnotation
