@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"time"
@@ -79,7 +80,7 @@ func (r *StatefulsetPoolReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 			log.Error(err, "unable to fetch statefulsetPool")
 			return ctrl.Result{}, err
 		}
-		return ctrl.Result{}, err
+		return ctrl.Result{}, nil
 	}
 	// Add finalizer
 	if !controllerutil.ContainsFinalizer(statefulsetPool, controllerFinalizer) {
@@ -149,17 +150,17 @@ func (r *StatefulsetPoolReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		})
 		if err != nil {
 			log.Error(err, "unable to update statefulsetPool status")
-			return ctrl.Result{}, nil
+			return ctrl.Result{}, err
 		}
 		err = r.Delete(ctx, Statefulset)
 		if err != nil {
 			log.Error(err, "unable to delete Statefulset")
-			return ctrl.Result{}, nil
+			return ctrl.Result{}, err
 		}
 		err = r.deleteFinalizer(ctx, statefulsetPool)
 		if err != nil {
 			log.Error(err, "unable to delete Finalizer")
-			return ctrl.Result{}, nil
+			return ctrl.Result{}, err
 		}
 		// delete all PVC and PV created by the StatefulsetPool
 		pvcList, err := r.getPVCList(ctx, statefulsetPool)
@@ -244,11 +245,11 @@ func (r *StatefulsetPoolReconciler) getPVList(ctx context.Context, statefulsetPo
 func (r *StatefulsetPoolReconciler) updateStatefulset(ctx context.Context, statefulsetPool *kwoksigsv1beta1.StatefulsetPool) error {
 	// get the Statefulset spec from the cluster
 	Statefulset, err := r.getStatefulset(ctx, statefulsetPool)
-	replicas := statefulsetPool.Spec.StatefulsetTemplate.Spec.Replicas
 	log.Log.Info("Updating Statefulset", "Statefulset", Statefulset)
 	if err != nil {
 		return err
 	}
+	replicas := statefulsetPool.Spec.StatefulsetTemplate.Spec.Replicas
 	pvList, err := r.getPVList(ctx, statefulsetPool)
 	if err != nil {
 		return err
@@ -257,9 +258,13 @@ func (r *StatefulsetPoolReconciler) updateStatefulset(ctx context.Context, state
 	Statefulset.Spec.Template.Spec.Containers = statefulsetPool.Spec.StatefulsetTemplate.Spec.Template.Spec.Containers
 	// scale up pv in case of replicas change
 	if statefulsetPool.Spec.CreatePV && statefulsetPool.Spec.StatefulsetTemplate.Spec.VolumeClaimTemplates != nil && int(*replicas) > int(len(pvList.Items)) {
-		storageClassName, err := r.getStorageClassName(ctx)
-		if err != nil {
-			return err
+		storageClassName := statefulsetPool.Spec.StatefulsetTemplate.Spec.VolumeClaimTemplates[0].Spec.StorageClassName
+		println("the storageclase name is", storageClassName)
+		if storageClassName == nil {
+			storageClassName, err = r.getDefaultStorageClassName(ctx)
+			if err != nil {
+				return err
+			}
 		}
 		if len(pvList.Items) < int(*replicas) {
 			for i := int(len(pvList.Items)); i < int(*replicas); i++ {
@@ -345,10 +350,15 @@ func (r *StatefulsetPoolReconciler) createStatefulset(ctx context.Context, state
 	}
 	if statefulsetPool.Spec.CreatePV && statefulsetPool.Spec.StatefulsetTemplate.Spec.VolumeClaimTemplates != nil {
 		pvCount := 0
+		err := error(nil)
 		replicas := statefulsetPool.Spec.StatefulsetTemplate.Spec.Replicas
-		storageClassName, err := r.getStorageClassName(ctx)
-		if err != nil {
-			return err
+		storageClassName := statefulsetPool.Spec.StatefulsetTemplate.Spec.VolumeClaimTemplates[0].Spec.StorageClassName
+		println("the storageclase name is", storageClassName)
+		if storageClassName == nil { 
+			storageClassName, err = r.getDefaultStorageClassName(ctx)
+			if err != nil {
+				return err
+			}
 		}
 		pvList, err := r.getPVList(ctx, statefulsetPool)
 		if err != nil {
@@ -383,7 +393,7 @@ func (r *StatefulsetPoolReconciler) createStatefulset(ctx context.Context, state
 }
 
 // Get default storage class name
-func (r *StatefulsetPoolReconciler) getStorageClassName(ctx context.Context) (*string, error) {
+func (r *StatefulsetPoolReconciler) getDefaultStorageClassName(ctx context.Context) (*string, error) {
 	storageClassList := &v1.StorageClassList{}
 	err := r.List(ctx, storageClassList)
 	if err != nil {
@@ -414,7 +424,7 @@ func (r *StatefulsetPoolReconciler) createPV(ctx context.Context, statefulsetPoo
 			AccessModes: []corev1.PersistentVolumeAccessMode{
 				corev1.ReadWriteOnce,
 			},
-
+			StorageClassName: *storageClassName,
 			PersistentVolumeReclaimPolicy: corev1.PersistentVolumeReclaimDelete,
 			PersistentVolumeSource: corev1.PersistentVolumeSource{
 				Local: &corev1.LocalVolumeSource{
@@ -438,8 +448,9 @@ func (r *StatefulsetPoolReconciler) createPV(ctx context.Context, statefulsetPoo
 			},
 		},
 	}
-	if storageClassName != nil {
-		pv.Spec.StorageClassName = *storageClassName
+	if len(*storageClassName) == 0 {
+		err := errors.New("storageClassName is nil, please provide a storageClassName in your sts or create a default storageClassName")
+		return err
 	}
 	err := r.Create(ctx, pv)
 	if err != nil {

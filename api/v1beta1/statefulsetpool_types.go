@@ -21,12 +21,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // StatefulsetPoolSpec defines the desired state of StatefulsetPool
 type StatefulsetPoolSpec struct {
-	CreatePV            bool               `json:"createPV" default:"false"`
+	CreatePV            bool               `json:"createPV,omitempty"`
 	StatefulsetTemplate appsv1.StatefulSet `json:"StatefulsetTemplate"`
 }
 

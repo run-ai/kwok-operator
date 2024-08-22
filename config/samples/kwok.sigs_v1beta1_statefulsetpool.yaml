@@ -20,7 +20,7 @@ spec:
         app.kubernetes.io/created-by: kwok-operator
     spec:
       serviceName: "nginx"
-      replicas: 45
+      replicas: 15
       selector:
         matchLabels:
           app: nginx
