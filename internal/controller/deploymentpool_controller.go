@@ -133,12 +133,12 @@ func (r *DeploymentPoolReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		log.Info("Updating DeploymentPool")
 		if err != nil {
 			log.Error(err, "unable to update DeploymentPool status")
-			return ctrl.Result{}, nil
+			return ctrl.Result{}, err
 		}
 		err = r.updateDeployment(ctx, deploymentPool)
 		if err != nil {
 			log.Error(err, "unable to update Deployment")
-			return ctrl.Result{}, nil
+			return ctrl.Result{}, err
 		}
 
 		return ctrl.Result{}, nil

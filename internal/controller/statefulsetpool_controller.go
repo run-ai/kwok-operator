@@ -166,9 +166,6 @@ func (r *StatefulsetPoolReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		if err != nil {
 			return ctrl.Result{}, err
 		}
-		if err != nil {
-			log.Error(err, "unable to list PVC")
-		}
 		for _, pvc := range pvcList.Items {
 			err = r.Delete(ctx, &pvc)
 			if err != nil {
@@ -337,7 +334,8 @@ func (r *StatefulsetPoolReconciler) createStatefulset(ctx context.Context, state
 	Statefulset := &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(statefulsetPool, kwoksigsv1beta1.GroupVersion.WithKind("statefulsetPool")),
+				*metav1.NewControllerRef(statefulsetPool, kwoksigsv1beta1.GroupVersion.WithKind("StatefulsetPool")),
+				
 			},
 			Name:      statefulsetPool.Name,
 			Namespace: statefulsetPool.Namespace,
