@@ -208,7 +208,7 @@ spec:
         name: nginx
       restartPolicy: Always
 ```
-
+Added in version 0.0.5
 To use the Kwok Operator to manage jobs on top the nodes you provisioned above, follow these steps:
 1. ensure the namespace is exist
 2. Define a JobPool custom resource (CR) with your desired configuration. Example:
@@ -250,6 +250,7 @@ spec:
             command: ["sh", "-c", "echo Hello, Kubernetes! && sleep 3600"]
           restartPolicy: Never
 ```
+Added in version 0.0.7
 To use the Kwok Operator to manage Daemonset on top the nodes you provisioned above, follow these steps:
 1. ensure the namespace is exist
 2. Define a DaemonsetPool custom resource (CR) with your desired configuration. Example:
@@ -305,7 +306,7 @@ If you encounter any issues with the Kwok Operator, please check the following:
   https://kwok.sigs.k8s.io/docs/user/kwok-in-cluster/
 - Check the logs of the Kwok Operator pod for any error messages under namespace kwok-operaotr.
 
-From version 1.0.0 the Kwok Operator is able to manage Statefuleset include PVC on top the nodes you provisioned above, follow these steps:
+From version 1.0.0 the Kwok Operator is able to manage Statefuleset. To include PVC on top of the nodes you have provisioned above, follow these steps:
 1. ensure the namespace is exist
 2. ensure that storage class is installed and working as expected in the cluster 
 2. Define a statefulesetPool custom resource (CR) with your desired configuration. Example:

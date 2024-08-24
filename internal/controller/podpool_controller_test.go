@@ -42,7 +42,7 @@ var _ = Describe("PodPool Controller", func() {
 
 		typeNamespacedName := types.NamespacedName{
 			Name:      resourceName,
-			Namespace: "default", // TODO(user):Modify as needed
+			Namespace: "default",
 		}
 		podpool := &kwoksigsv1beta1.PodPool{}
 
