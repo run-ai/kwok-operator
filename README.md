@@ -54,7 +54,7 @@ To install Kwok CRDs and the Kwok Operator, follow these steps:
    ```
    or 
    ```shell
-   kubectl apply --server-side -f https://github.com/run-ai/kwok-operator/releases/download/0.0.7/kwok-operator.yaml
+   kubectl apply --server-side -f https://github.com/run-ai/kwok-operator/releases/download/1.0.0/kwok-operator.yaml
    ```
 ## Usage
 
@@ -208,7 +208,7 @@ spec:
         name: nginx
       restartPolicy: Always
 ```
-
+Added in version 0.0.5
 To use the Kwok Operator to manage jobs on top the nodes you provisioned above, follow these steps:
 1. ensure the namespace is exist
 2. Define a JobPool custom resource (CR) with your desired configuration. Example:
@@ -250,6 +250,7 @@ spec:
             command: ["sh", "-c", "echo Hello, Kubernetes! && sleep 3600"]
           restartPolicy: Never
 ```
+Added in version 0.0.7
 To use the Kwok Operator to manage Daemonset on top the nodes you provisioned above, follow these steps:
 1. ensure the namespace is exist
 2. Define a DaemonsetPool custom resource (CR) with your desired configuration. Example:
@@ -305,6 +306,60 @@ If you encounter any issues with the Kwok Operator, please check the following:
   https://kwok.sigs.k8s.io/docs/user/kwok-in-cluster/
 - Check the logs of the Kwok Operator pod for any error messages under namespace kwok-operaotr.
 
+From version 1.0.0 the Kwok Operator is able to manage Statefuleset. To include PVC on top of the nodes you have provisioned above, follow these steps:
+1. ensure the namespace is exist
+2. ensure that storage class is installed and working as expected in the cluster 
+2. Define a statefulesetPool custom resource (CR) with your desired configuration. Example:
+```yaml
+apiVersion: kwok.sigs.run-ai.com/v1beta1
+kind: StatefulsetPool
+metadata:
+  labels:
+    app.kubernetes.io/name: statefulsetpool
+    app.kubernetes.io/instance: statefulsetpool-sample
+    app.kubernetes.io/part-of: kwok-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: kwok-operator
+  name: statefulsetpool-sample
+spec:
+  createPV: true
+  StatefulsetTemplate:
+    metadata:
+      labels:
+        app.kubernetes.io/name: statefulsetpool
+        app.kubernetes.io/instance: statefulsetpool-sample
+        app.kubernetes.io/part-of: kwok-operator
+        app.kubernetes.io/managed-by: kustomize
+        app.kubernetes.io/created-by: kwok-operator
+    spec:
+      serviceName: "nginx"
+      replicas: 45
+      selector:
+        matchLabels:
+          app: nginx
+      template:
+        metadata:
+          labels:
+            app: nginx
+        spec:
+          containers:
+          - name: nginx
+            image: registry.k8s.io/nginx-slim:0.21
+            ports:
+            - containerPort: 80
+              name: web
+            volumeMounts:
+            - name: www
+              mountPath: /usr/share/nginx/html
+      volumeClaimTemplates:
+      - metadata:
+          name: www
+        spec:
+          accessModes: [ "ReadWriteOnce" ]
+          resources:
+            requests:
+              storage: 1Gi
+```
 ## Contributing
 
 Contributions to the Kwok Operator are welcome! To contribute, please follow the guidelines outlined in [CONTRIBUTING.md](./CONTRIBUTING.md).

@@ -63,14 +63,12 @@ var _ = Describe("NodePool Controller", func() {
 					Spec: kwoksigsv1beta1.NodePoolSpec{
 						NodeCount: 2,
 					},
-					// TODO(user): Specify other spec details if needed.
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}
 		})
 
 		AfterEach(func() {
-			// TODO(user): Cleanup logic after each test, like removing the resource instance.
 			resource := &kwoksigsv1beta1.NodePool{}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
 			Expect(err).NotTo(HaveOccurred())

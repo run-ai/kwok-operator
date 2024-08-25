@@ -44,7 +44,7 @@ const (
 var (
 	typeNamespacedName = types.NamespacedName{
 		Name:      deploymentpoolName,
-		Namespace: deploymentpoolNamespace, // TODO(user):Modify as needed
+		Namespace: deploymentpoolNamespace,
 	}
 	ctx = context.Background()
 )
@@ -100,7 +100,6 @@ var _ = Describe("DeploymentPool Controller", func() {
 		})
 
 		AfterEach(func() {
-			// TODO(user): Cleanup logic after each test, like removing the resource instance.
 			resource := &kwoksigsv1beta1.DeploymentPool{}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
 			Expect(err).NotTo(HaveOccurred())
