@@ -95,11 +95,13 @@ func (r *DaemonsetPoolReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		log.Error(err, "unable to get Daemonset")
 		return ctrl.Result{}, err
 	}
-	if int32(len(daemonsets)) < daemonsetPool.Spec.DaemonsetCount {
+	if int32(len(daemonsets)) == 0 {
 		log.Info("Daemonset resource not found. Creating a new one")
-		err = r.createDaemonset(ctx, daemonsetPool)
-		if err != nil {
-			return ctrl.Result{}, err
+		for i := int32(len(daemonsets)); i < daemonsetPool.Spec.DaemonsetCount; i++ {
+			err = r.createDaemonset(ctx, daemonsetPool)
+			if err != nil {
+				return ctrl.Result{}, err
+			}
 		}
 		return ctrl.Result{Requeue: true}, nil
 	}
@@ -184,22 +186,11 @@ func (r *DaemonsetPoolReconciler) updateDaemonset(ctx context.Context, daemonset
 	if err != nil {
 		return err
 	}
-
 	// loop through the Daemonset and update the Daemonset with the DaemonsetPool spec
 	if len(daemonsets) < int(daemonsetPool.Spec.DaemonsetCount) {
+		log.Log.Info("the len of the current daemonset is: ", "len", len(daemonsets))
 		for i := int32(len(daemonsets)); i < daemonsetPool.Spec.DaemonsetCount; i++ {
-			daemonset := &appsv1.DaemonSet{
-				ObjectMeta: metav1.ObjectMeta{
-					OwnerReferences: []metav1.OwnerReference{
-						*metav1.NewControllerRef(daemonsetPool, kwoksigsv1beta1.GroupVersion.WithKind("DaemonsetPool")),
-					},
-					GenerateName: daemonsetPool.Name + "-",
-					Namespace:    daemonsetPool.Namespace,
-				},
-				Spec: daemonsetPool.Spec.DaemonsetTemplate.Spec,
-			}
-			daemonset.Spec.Template.Spec.Containers = daemonsetPool.Spec.DaemonsetTemplate.Spec.Template.Spec.Containers
-			err = r.Update(ctx, daemonset)
+			err = r.createDaemonset(ctx, daemonsetPool)
 			if err != nil {
 				return err
 			}

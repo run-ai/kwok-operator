@@ -10,7 +10,7 @@ metadata:
   name: daemonsetpool-sample
   namespace: default
 spec:
-  daemonsetCount: 5
+  daemonsetCount: 10
   daemonsetTemplate:
     metadata:
       name: kwok-operator
