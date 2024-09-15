@@ -38,6 +38,9 @@ spec:
             type: object
           spec:
             properties:
+              daemonsetCount:
+                format: int32
+                type: integer
               daemonsetTemplate:
                 description: DaemonSet represents the configuration of a daemon set.
                 properties:
@@ -7737,6 +7740,7 @@ spec:
                     type: object
                 type: object
             required:
+            - daemonsetCount
             - daemonsetTemplate
             type: object
           status:

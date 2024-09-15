@@ -24,6 +24,7 @@ import (
 // StatefulsetPoolSpec defines the desired state of StatefulsetPool
 type StatefulsetPoolSpec struct {
 	CreatePV            bool               `json:"createPV,omitempty"`
+	StatefulsetCount    int32              `json:"statefulsetCount"`
 	StatefulsetTemplate appsv1.StatefulSet `json:"StatefulsetTemplate"`
 }
 

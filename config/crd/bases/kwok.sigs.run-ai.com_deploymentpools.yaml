@@ -39,6 +39,9 @@ spec:
           spec:
             description: DeploymentPoolSpec defines the desired state of DeploymentPool
             properties:
+              deploymentCount:
+                format: int32
+                type: integer
               deploymentTemplate:
                 description: Deployment enables declarative updates for Pods and ReplicaSets.
                 properties:
@@ -7711,6 +7714,7 @@ spec:
                     type: object
                 type: object
             required:
+            - deploymentCount
             - deploymentTemplate
             type: object
           status:

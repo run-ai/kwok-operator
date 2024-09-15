@@ -8202,9 +8202,12 @@ spec:
                 type: object
               createPV:
                 type: boolean
+              statefulsetCount:
+                format: int32
+                type: integer
             required:
             - StatefulsetTemplate
-            - createPV
+            - statefulsetCount
             type: object
           status:
             description: StatefulsetPoolStatus defines the observed state of StatefulsetPool

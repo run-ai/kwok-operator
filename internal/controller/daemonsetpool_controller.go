@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -89,12 +90,12 @@ func (r *DaemonsetPoolReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, nil
 	}
 	// Get Daemonset in the cluster with owner reference of the DaemonsetPool
-	daemonset, err := r.getDaemonset(ctx, daemonsetPool)
+	daemonsets, err := r.getDaemonset(ctx, daemonsetPool)
 	if err != nil {
 		log.Error(err, "unable to get Daemonset")
 		return ctrl.Result{}, err
 	}
-	if daemonset == nil {
+	if int32(len(daemonsets)) < daemonsetPool.Spec.DaemonsetCount {
 		log.Info("Daemonset resource not found. Creating a new one")
 		err = r.createDaemonset(ctx, daemonsetPool)
 		if err != nil {
@@ -138,6 +139,7 @@ func (r *DaemonsetPoolReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 		return ctrl.Result{}, nil
 	}
+	// delete the Daemonset if the DaemonsetPool is being deleted
 	if !daemonsetPool.DeletionTimestamp.IsZero() {
 		log.Info("DaemonsetPool is being deleted. Deleting Daemonset")
 		err = r.statusConditionController(ctx, daemonsetPool, metav1.Condition{
@@ -150,10 +152,12 @@ func (r *DaemonsetPoolReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			log.Error(err, "unable to update DaemonsetPool status")
 			return ctrl.Result{}, err
 		}
-		err = r.Delete(ctx, daemonset)
-		if err != nil {
-			log.Error(err, "unable to delete Daemonset")
-			return ctrl.Result{}, err
+		// delete the Daemonsets in the cluster
+		for _, daemonset := range daemonsets {
+			err = r.Delete(ctx, &daemonset)
+			if err != nil {
+				log.Error(err, "unable to delete daemonset")
+			}
 		}
 		err = r.deleteFinalizer(ctx, daemonsetPool)
 		if err != nil {
@@ -175,16 +179,49 @@ func (r *DaemonsetPoolReconciler) deleteFinalizer(ctx context.Context, daemonset
 // update the Daemonset in the cluster with owner reference to the DaemonsetPool
 func (r *DaemonsetPoolReconciler) updateDaemonset(ctx context.Context, daemonsetPool *kwoksigsv1beta1.DaemonsetPool) error {
 	// get the Daemonset spec from the cluster
-	daemonset, err := r.getDaemonset(ctx, daemonsetPool)
-	log.Log.Info("Updating daemonset", "daemonset", daemonset)
+	daemonsets, err := r.getDaemonset(ctx, daemonsetPool)
+	log.Log.Info("Updating daemonset", "daemonset", daemonsets)
 	if err != nil {
 		return err
 	}
-	daemonset.Spec.Template.Spec.Containers = daemonsetPool.Spec.DaemonsetTemplate.Spec.Template.Spec.Containers
-	err = r.Update(ctx, daemonset)
-	if err != nil {
-		return err
+
+	// loop through the Daemonset and update the Daemonset with the DaemonsetPool spec
+	if len(daemonsets) < int(daemonsetPool.Spec.DaemonsetCount) {
+		for i := int32(len(daemonsets)); i < daemonsetPool.Spec.DaemonsetCount; i++ {
+			daemonset := &appsv1.DaemonSet{
+				ObjectMeta: metav1.ObjectMeta{
+					OwnerReferences: []metav1.OwnerReference{
+						*metav1.NewControllerRef(daemonsetPool, kwoksigsv1beta1.GroupVersion.WithKind("DaemonsetPool")),
+					},
+					GenerateName: daemonsetPool.Name + "-",
+					Namespace:    daemonsetPool.Namespace,
+				},
+				Spec: daemonsetPool.Spec.DaemonsetTemplate.Spec,
+			}
+			daemonset.Spec.Template.Spec.Containers = daemonsetPool.Spec.DaemonsetTemplate.Spec.Template.Spec.Containers
+			err = r.Update(ctx, daemonset)
+			if err != nil {
+				return err
+			}
+		}
+	} else if len(daemonsets) > int(daemonsetPool.Spec.DaemonsetCount) {
+		for i := int32(len(daemonsets)); i > daemonsetPool.Spec.DaemonsetCount; i-- {
+			err = r.Delete(ctx, &daemonsets[i-1])
+			if err != nil {
+				return err
+			}
+		}
+	} else {
+		for i := 0; i < len(daemonsets); i++ {
+			daemonset := daemonsets[i]
+			daemonset.Spec.Template.Spec.Containers = daemonsetPool.Spec.DaemonsetTemplate.Spec.Template.Spec.Containers
+			err = r.Update(ctx, &daemonset)
+			if err != nil {
+				return err
+			}
+		}
 	}
+
 	err = r.updateObservedGeneration(ctx, daemonsetPool)
 	if err != nil {
 		return err
@@ -194,6 +231,11 @@ func (r *DaemonsetPoolReconciler) updateDaemonset(ctx context.Context, daemonset
 
 // create the Daemonset in the cluster with owner reference to the DaemonsetPool
 func (r *DaemonsetPoolReconciler) createDaemonset(ctx context.Context, daemonsetPool *kwoksigsv1beta1.DaemonsetPool) error {
+	daemonsetLabels := daemonsetPool.Spec.DaemonsetTemplate.Labels
+	if daemonsetLabels == nil {
+		daemonsetLabels = make(map[string]string)
+	}
+	daemonsetLabels[controllerLabel] = daemonsetPool.Name
 	daemonsetToleration := daemonsetPool.Spec.DaemonsetTemplate.Spec.Template.Spec.Tolerations
 	if daemonsetToleration == nil {
 		daemonsetToleration = make([]corev1.Toleration, 0)
@@ -208,8 +250,9 @@ func (r *DaemonsetPoolReconciler) createDaemonset(ctx context.Context, daemonset
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(daemonsetPool, kwoksigsv1beta1.GroupVersion.WithKind("DaemonsetPool")),
 			},
-			Name:      daemonsetPool.Name,
-			Namespace: daemonsetPool.Namespace,
+			GenerateName: daemonsetPool.Name + "-",
+			Namespace:    daemonsetPool.Namespace,
+			Labels:       daemonsetLabels,
 		},
 		Spec: daemonsetPool.Spec.DaemonsetTemplate.Spec,
 	}
@@ -222,6 +265,7 @@ func (r *DaemonsetPoolReconciler) createDaemonset(ctx context.Context, daemonset
 			controllerLabel: daemonsetPool.Name,
 		},
 	}
+
 	err := r.Create(ctx, daemonset)
 	if err != nil {
 		return err
@@ -240,19 +284,15 @@ func (r *DaemonsetPoolReconciler) updateObservedGeneration(ctx context.Context, 
 }
 
 // get the Daemonset in the cluster with owner reference to the DaemonsetPool
-func (r *DaemonsetPoolReconciler) getDaemonset(ctx context.Context, daemonsetPool *kwoksigsv1beta1.DaemonsetPool) (*appsv1.DaemonSet, error) {
-	daemonset := &appsv1.DaemonSet{}
-	err := r.Get(ctx, client.ObjectKey{
-		Namespace: daemonsetPool.Namespace,
-		Name:      daemonsetPool.Name,
-	}, daemonset)
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			return nil, nil
-		}
+func (r *DaemonsetPoolReconciler) getDaemonset(ctx context.Context, daemonsetPool *kwoksigsv1beta1.DaemonsetPool) ([]appsv1.DaemonSet, error) {
+	daemonset := &appsv1.DaemonSetList{}
+	err := r.List(ctx, daemonset, client.InNamespace(daemonsetPool.Namespace), client.MatchingLabels{controllerLabel: daemonsetPool.Name})
+	if err != nil && strings.Contains(err.Error(), "does not exist") {
+		return []appsv1.DaemonSet{}, nil
+	} else if err != nil {
 		return nil, err
 	}
-	return daemonset, nil
+	return daemonset.Items, nil
 }
 
 // adding finalizer to the DaemonsetPool

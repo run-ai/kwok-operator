@@ -98,6 +98,7 @@ func (r *StatefulsetPoolReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		log.Error(err, "unable to get Statefulset")
 		return ctrl.Result{}, err
 	}
+	// check if statefulset is lower than the expected replicas
 	if Statefulset == nil {
 		err = r.createStatefulset(ctx, statefulsetPool)
 		if err != nil {
@@ -340,7 +341,6 @@ func (r *StatefulsetPoolReconciler) createStatefulset(ctx context.Context, state
 		ObjectMeta: metav1.ObjectMeta{
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(statefulsetPool, kwoksigsv1beta1.GroupVersion.WithKind("StatefulsetPool")),
-				
 			},
 			Name:      statefulsetPool.Name,
 			Namespace: statefulsetPool.Namespace,
@@ -354,7 +354,7 @@ func (r *StatefulsetPoolReconciler) createStatefulset(ctx context.Context, state
 		replicas := statefulsetPool.Spec.StatefulsetTemplate.Spec.Replicas
 		storageClassName := statefulsetPool.Spec.StatefulsetTemplate.Spec.VolumeClaimTemplates[0].Spec.StorageClassName
 		println("the storageclase name is", storageClassName)
-		if storageClassName == nil { 
+		if storageClassName == nil {
 			storageClassName, err = r.getDefaultStorageClassName(ctx)
 			if err != nil {
 				return err
@@ -424,7 +424,7 @@ func (r *StatefulsetPoolReconciler) createPV(ctx context.Context, statefulsetPoo
 			AccessModes: []corev1.PersistentVolumeAccessMode{
 				corev1.ReadWriteOnce,
 			},
-			StorageClassName: *storageClassName,
+			StorageClassName:              *storageClassName,
 			PersistentVolumeReclaimPolicy: corev1.PersistentVolumeReclaimDelete,
 			PersistentVolumeSource: corev1.PersistentVolumeSource{
 				Local: &corev1.LocalVolumeSource{
