@@ -10,7 +10,7 @@ metadata:
   name: deploymentpool-sample
   namespace: default
 spec:
-  deploymentCount: 1
+  deploymentCount: 5
   deploymentTemplate:
     metadata:
       name: kwok-operator
