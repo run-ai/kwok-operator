@@ -106,6 +106,10 @@ func (r *DeploymentPoolReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 				return ctrl.Result{}, err
 			}
 		}
+		err = r.updateObservedGeneration(ctx, deploymentPool)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
 		return ctrl.Result{Requeue: true}, nil
 	}
 	// update DeploymentPool status to condition true
@@ -139,12 +143,16 @@ func (r *DeploymentPoolReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			log.Error(err, "unable to update DeploymentPool status")
 			return ctrl.Result{}, err
 		}
-		err = r.updateDeployment(ctx, deploymentPool)
+		forrceRequeue := false
+		forrceRequeue, err = r.updateDeployment(ctx, deploymentPool)
 		if err != nil {
 			log.Error(err, "unable to update Deployment")
 			return ctrl.Result{}, err
 		}
-
+		if forrceRequeue {
+			println("Requeueing the deployment")
+			return ctrl.Result{Requeue: true}, nil
+		}
 		return ctrl.Result{}, nil
 	}
 	if !deploymentPool.DeletionTimestamp.IsZero() {
@@ -173,7 +181,6 @@ func (r *DeploymentPoolReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		}
 		return ctrl.Result{}, nil
 	}
-
 	log.Info("Reconciliation completed successfully")
 	return ctrl.Result{RequeueAfter: time.Duration(60 * time.Second)}, nil
 }
@@ -206,43 +213,48 @@ func (r *DeploymentPoolReconciler) getDeployment(ctx context.Context, deployment
 }
 
 // update deployment
-func (r *DeploymentPoolReconciler) updateDeployment(ctx context.Context, deploymentPool *kwoksigsv1beta1.DeploymentPool) error {
+func (r *DeploymentPoolReconciler) updateDeployment(ctx context.Context, deploymentPool *kwoksigsv1beta1.DeploymentPool) (bool, error) {
 	// get the deployment spec from the cluster
+	forceRequeue := false
 	deployments, err := r.getDeployment(ctx, deploymentPool)
 	if err != nil {
-		return err
+		return forceRequeue, err
 	}
 	if len(deployments) < int(deploymentPool.Spec.DeploymentCount) {
 		for i := int32(len(deployments)); i < deploymentPool.Spec.DeploymentCount; i++ {
 			err = r.createDeployment(ctx, deploymentPool)
 			if err != nil {
-				return err
+				return forceRequeue, err
 			}
 		}
+		forceRequeue = true
+		return forceRequeue, nil
 	} else if len(deployments) > int(deploymentPool.Spec.DeploymentCount) {
 		for i := int32(len(deployments)); i > deploymentPool.Spec.DeploymentCount; i-- {
 			err = r.Delete(ctx, &deployments[i-1])
 			if err != nil {
-				return err
+				return forceRequeue, err
 			}
 		}
+		forceRequeue = true
+		return forceRequeue, nil
 	} else {
 		for i := 0; i < len(deployments); i++ {
+			println("[debug1] im here1")
 			deployment := &deployments[i]
 			deployment.Spec.Replicas = deploymentPool.Spec.DeploymentTemplate.Spec.Replicas
 			deployment.Spec.Template.Spec.Containers = deploymentPool.Spec.DeploymentTemplate.Spec.Template.Spec.Containers
 			err = r.Update(ctx, deployment)
 			if err != nil {
-				return err
+				return forceRequeue, err
 			}
 		}
 	}
-
 	err = r.updateObservedGeneration(ctx, deploymentPool)
 	if err != nil {
-		return err
+		return forceRequeue, err
 	}
-	return nil
+	return forceRequeue, nil
 }
 
 // create deployment
@@ -286,10 +298,6 @@ func (r *DeploymentPoolReconciler) createDeployment(ctx context.Context, deploym
 	deployment.Spec.Template.Spec.Tolerations = deploymentToleration
 
 	err := r.Create(ctx, deployment)
-	if err != nil {
-		return err
-	}
-	err = r.updateObservedGeneration(ctx, deploymentPool)
 	if err != nil {
 		return err
 	}

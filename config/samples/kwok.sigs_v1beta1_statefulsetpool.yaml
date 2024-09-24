@@ -10,7 +10,7 @@ metadata:
   name: statefulsetpool-sample
 spec:
   createPV: true
-  statefulsetCount: 1
+  statefulsetCount: 2
   StatefulsetTemplate:
     metadata:
       labels:
