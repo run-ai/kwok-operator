@@ -5,4 +5,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: docker.io/runaidevops/kwok-operator
-  newTag: 1.0.0
+  newTag: 1.0.1

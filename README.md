@@ -54,7 +54,7 @@ To install Kwok CRDs and the Kwok Operator, follow these steps:
    ```
    or 
    ```shell
-   kubectl apply --server-side -f https://github.com/run-ai/kwok-operator/releases/download/1.0.0/kwok-operator.yaml
+   kubectl apply --server-side -f https://github.com/run-ai/kwok-operator/releases/download/1.0.1/kwok-operator.yaml
    ```
 ## Usage
 
@@ -143,6 +143,7 @@ metadata:
   name: deploymentpool-sample
   namespace: default
 spec:  
+  deploymentCount: 5
   deploymentTemplate:
     apiVersion: apps/v1 
     metadata:
@@ -267,6 +268,7 @@ metadata:
   name: daemonsetpool-sample
   namespace: default
 spec:
+  daemonsetCount: 10
   daemonsetTemplate:
     metadata:
       name: kwok-operator
@@ -323,6 +325,7 @@ metadata:
   name: statefulsetpool-sample
 spec:
   createPV: true
+  statefulsetCount: 2
   StatefulsetTemplate:
     metadata:
       labels:
