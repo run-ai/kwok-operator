@@ -22,11 +22,11 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/api/errors"
 
 	//"k8s.io/client-go/tools/clientcmd/api"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -286,7 +286,6 @@ func (r *DaemonsetPoolReconciler) getDaemonsets(ctx context.Context, daemonsetPo
 	}
 	return daemonset.Items, nil
 }
-
 
 // adding finalizer to the DaemonsetPool
 func (r *DaemonsetPoolReconciler) addFinalizer(ctx context.Context, daemonsetPool *kwoksigsv1beta1.DaemonsetPool) error {

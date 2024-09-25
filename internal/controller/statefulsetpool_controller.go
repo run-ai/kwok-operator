@@ -141,12 +141,12 @@ func (r *StatefulsetPoolReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 			log.Error(err, "unable to update StatefulsetPool status")
 			return ctrl.Result{}, err
 		}
-		forrceRequeue := false
-		forrceRequeue, err = r.updateStatefulset(ctx, statefulsetPool)
+		forceRequeue := false
+		forceRequeue, err = r.updateStatefulset(ctx, statefulsetPool)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
-		if forrceRequeue {
+		if forceRequeue {
 			return ctrl.Result{Requeue: true}, nil
 		}
 		return ctrl.Result{}, nil
@@ -495,7 +495,6 @@ func (r *StatefulsetPoolReconciler) createStatefulset(ctx context.Context, state
 			nameSuffix := statefulsetPool.Spec.StatefulsetTemplate.Spec.VolumeClaimTemplates[0].Name
 			for i := int32(pvCount); i < *replicas; i++ {
 				pvName := fmt.Sprintf("%s-%s-%d", nameSuffix, fmt.Sprintf("%s-%d", statefulsetPool.Name, statefulsetIndex), i)
-				log.Log.Info("the pv name is", pvName)
 				err = r.createPV(ctx, statefulsetPool, storageClassName, &pvName, statefulsetIndex)
 				if err != nil {
 					return err

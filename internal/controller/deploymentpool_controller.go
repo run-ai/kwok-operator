@@ -19,6 +19,7 @@ package controller
 import (
 	"context"
 	"time"
+
 	"k8s.io/apimachinery/pkg/api/errors"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -143,13 +144,13 @@ func (r *DeploymentPoolReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			log.Error(err, "unable to update DeploymentPool status")
 			return ctrl.Result{}, err
 		}
-		forrceRequeue := false
-		forrceRequeue, err = r.updateDeployment(ctx, deploymentPool)
+		forceRequeue := false
+		forceRequeue, err = r.updateDeployment(ctx, deploymentPool)
 		if err != nil {
 			log.Error(err, "unable to update Deployment")
 			return ctrl.Result{}, err
 		}
-		if forrceRequeue {
+		if forceRequeue {
 			println("Requeueing the deployment")
 			return ctrl.Result{Requeue: true}, nil
 		}
