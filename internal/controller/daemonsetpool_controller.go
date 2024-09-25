@@ -90,7 +90,7 @@ func (r *DaemonsetPoolReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, nil
 	}
 	// Get Daemonset in the cluster with owner reference of the DaemonsetPool
-	daemonsets, err := r.getDaemonset(ctx, daemonsetPool)
+	daemonsets, err := r.getDaemonsets(ctx, daemonsetPool)
 	if err != nil {
 		log.Error(err, "unable to get Daemonset")
 		return ctrl.Result{}, err
@@ -181,7 +181,7 @@ func (r *DaemonsetPoolReconciler) deleteFinalizer(ctx context.Context, daemonset
 // update the Daemonset in the cluster with owner reference to the DaemonsetPool
 func (r *DaemonsetPoolReconciler) updateDaemonset(ctx context.Context, daemonsetPool *kwoksigsv1beta1.DaemonsetPool) error {
 	// get the Daemonset spec from the cluster
-	daemonsets, err := r.getDaemonset(ctx, daemonsetPool)
+	daemonsets, err := r.getDaemonsets(ctx, daemonsetPool)
 	log.Log.Info("Updating daemonset", "daemonset", daemonsets)
 	if err != nil {
 		return err
@@ -192,6 +192,7 @@ func (r *DaemonsetPoolReconciler) updateDaemonset(ctx context.Context, daemonset
 		for i := int32(len(daemonsets)); i < daemonsetPool.Spec.DaemonsetCount; i++ {
 			err = r.createDaemonset(ctx, daemonsetPool)
 			if err != nil {
+				log.Log.Error(err, "unable to create Daemonset")
 				return err
 			}
 		}
@@ -275,7 +276,7 @@ func (r *DaemonsetPoolReconciler) updateObservedGeneration(ctx context.Context, 
 }
 
 // get the Daemonset in the cluster with owner reference to the DaemonsetPool
-func (r *DaemonsetPoolReconciler) getDaemonset(ctx context.Context, daemonsetPool *kwoksigsv1beta1.DaemonsetPool) ([]appsv1.DaemonSet, error) {
+func (r *DaemonsetPoolReconciler) getDaemonsets(ctx context.Context, daemonsetPool *kwoksigsv1beta1.DaemonsetPool) ([]appsv1.DaemonSet, error) {
 	daemonset := &appsv1.DaemonSetList{}
 	err := r.List(ctx, daemonset, client.InNamespace(daemonsetPool.Namespace), client.MatchingLabels{controllerLabel: daemonsetPool.Name})
 	if err != nil && errors.IsNotFound(err) {

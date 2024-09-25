@@ -495,7 +495,7 @@ func (r *StatefulsetPoolReconciler) createStatefulset(ctx context.Context, state
 			nameSuffix := statefulsetPool.Spec.StatefulsetTemplate.Spec.VolumeClaimTemplates[0].Name
 			for i := int32(pvCount); i < *replicas; i++ {
 				pvName := fmt.Sprintf("%s-%s-%d", nameSuffix, fmt.Sprintf("%s-%d", statefulsetPool.Name, statefulsetIndex), i)
-				println("the pv name is", pvName)
+				log.Log.Info("the pv name is", pvName)
 				err = r.createPV(ctx, statefulsetPool, storageClassName, &pvName, statefulsetIndex)
 				if err != nil {
 					return err
