@@ -18,7 +18,6 @@ package controller
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -27,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/api/errors"
 
 	//"k8s.io/client-go/tools/clientcmd/api"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -278,13 +278,14 @@ func (r *DaemonsetPoolReconciler) updateObservedGeneration(ctx context.Context, 
 func (r *DaemonsetPoolReconciler) getDaemonset(ctx context.Context, daemonsetPool *kwoksigsv1beta1.DaemonsetPool) ([]appsv1.DaemonSet, error) {
 	daemonset := &appsv1.DaemonSetList{}
 	err := r.List(ctx, daemonset, client.InNamespace(daemonsetPool.Namespace), client.MatchingLabels{controllerLabel: daemonsetPool.Name})
-	if err != nil && strings.Contains(err.Error(), "does not exist") {
+	if err != nil && errors.IsNotFound(err) {
 		return []appsv1.DaemonSet{}, nil
 	} else if err != nil {
 		return nil, err
 	}
 	return daemonset.Items, nil
 }
+
 
 // adding finalizer to the DaemonsetPool
 func (r *DaemonsetPoolReconciler) addFinalizer(ctx context.Context, daemonsetPool *kwoksigsv1beta1.DaemonsetPool) error {

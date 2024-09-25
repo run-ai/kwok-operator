@@ -18,8 +18,8 @@ package controller
 
 import (
 	"context"
-	"strings"
 	"time"
+	"k8s.io/apimachinery/pkg/api/errors"
 
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -204,7 +204,7 @@ func (r *DeploymentPoolReconciler) getDeployment(ctx context.Context, deployment
 
 	deployment := &appsv1.DeploymentList{}
 	err := r.List(ctx, deployment, client.InNamespace(deploymentPool.Namespace), client.MatchingLabels{controllerLabel: deploymentPool.Name})
-	if err != nil && strings.Contains(err.Error(), "does not exist") {
+	if err != nil && errors.IsNotFound(err) {
 		return []appsv1.Deployment{}, nil
 	} else if err != nil {
 		return nil, err
