@@ -324,7 +324,7 @@ metadata:
     app.kubernetes.io/created-by: kwok-operator
   name: statefulsetpool-sample
 spec:
-  createPV: true
+  createPV: true # optional , default is false 
   statefulsetCount: 2
   StatefulsetTemplate:
     metadata:
