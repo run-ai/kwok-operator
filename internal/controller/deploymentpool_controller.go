@@ -20,6 +20,8 @@ import (
 	"context"
 	"time"
 
+	"k8s.io/apimachinery/pkg/api/errors"
+
 	"k8s.io/apimachinery/pkg/runtime"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -91,14 +93,21 @@ func (r *DeploymentPoolReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	// Get Deployment in the cluster with owner reference to the DeploymentPool
-	deployment, err := r.getDeployment(ctx, deploymentPool)
+	deployments, err := r.getDeployments(ctx, deploymentPool)
 	if err != nil {
 		//log.Error(err, "unable to get Deployment", deploymentPool)
 		return ctrl.Result{}, err
 	}
 	// Create Deployment if it does not exist
-	if deployment == nil {
-		err = r.createDeployment(ctx, deploymentPool)
+	if len(deployments) == 0 {
+		//log.Info("Creating %v Deployments", deploymentPool.Spec.DeploymentCount)
+		for i := 0; i < int(deploymentPool.Spec.DeploymentCount); i++ {
+			err = r.createDeployment(ctx, deploymentPool)
+			if err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+		err = r.updateObservedGeneration(ctx, deploymentPool)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
@@ -135,12 +144,16 @@ func (r *DeploymentPoolReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			log.Error(err, "unable to update DeploymentPool status")
 			return ctrl.Result{}, err
 		}
-		err = r.updateDeployment(ctx, deploymentPool)
+		forceRequeue := false
+		forceRequeue, err = r.updateDeployment(ctx, deploymentPool)
 		if err != nil {
 			log.Error(err, "unable to update Deployment")
 			return ctrl.Result{}, err
 		}
-
+		if forceRequeue {
+			println("Requeueing the deployment")
+			return ctrl.Result{Requeue: true}, nil
+		}
 		return ctrl.Result{}, nil
 	}
 	if !deploymentPool.DeletionTimestamp.IsZero() {
@@ -155,10 +168,12 @@ func (r *DeploymentPoolReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			log.Error(err, "unable to update DeploymentPool status")
 			return ctrl.Result{}, nil
 		}
-		err = r.Delete(ctx, deployment)
-		if err != nil {
-			log.Error(err, "unable to delete Deployment")
-			return ctrl.Result{}, nil
+		for _, deployment := range deployments {
+			err = r.Delete(ctx, &deployment)
+			if err != nil {
+				log.Error(err, "unable to delete Deployment")
+				return ctrl.Result{}, nil
+			}
 		}
 		err = r.deleteFinalizer(ctx, deploymentPool)
 		if err != nil {
@@ -167,7 +182,6 @@ func (r *DeploymentPoolReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		}
 		return ctrl.Result{}, nil
 	}
-
 	log.Info("Reconciliation completed successfully")
 	return ctrl.Result{RequeueAfter: time.Duration(60 * time.Second)}, nil
 }
@@ -187,41 +201,64 @@ func (r *DeploymentPoolReconciler) deleteFinalizer(ctx context.Context, deployme
 	return r.Update(ctx, deploymentPool)
 }
 
-func (r *DeploymentPoolReconciler) getDeployment(ctx context.Context, deploymentPool *kwoksigsv1beta1.DeploymentPool) (*appsv1.Deployment, error) {
-	// get deplyment with the name of deploymentPool name
-	deployment := &appsv1.Deployment{}
-	err := r.Get(ctx, client.ObjectKey{
-		Namespace: deploymentPool.Namespace,
-		Name:      deploymentPool.Name,
-	}, deployment)
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			return nil, nil
-		}
+func (r *DeploymentPoolReconciler) getDeployments(ctx context.Context, deploymentPool *kwoksigsv1beta1.DeploymentPool) ([]appsv1.Deployment, error) {
+
+	deployment := &appsv1.DeploymentList{}
+	err := r.List(ctx, deployment, client.InNamespace(deploymentPool.Namespace), client.MatchingLabels{controllerLabel: deploymentPool.Name})
+	if err != nil && errors.IsNotFound(err) {
+		return []appsv1.Deployment{}, nil
+	} else if err != nil {
 		return nil, err
 	}
-	return deployment, nil
+	return deployment.Items, nil
 }
 
 // update deployment
-func (r *DeploymentPoolReconciler) updateDeployment(ctx context.Context, deploymentPool *kwoksigsv1beta1.DeploymentPool) error {
+func (r *DeploymentPoolReconciler) updateDeployment(ctx context.Context, deploymentPool *kwoksigsv1beta1.DeploymentPool) (bool, error) {
 	// get the deployment spec from the cluster
-	deployment, err := r.getDeployment(ctx, deploymentPool)
-	log.Log.Info("Updating Deployment", "Deployment", deployment)
+	forceRequeue := false
+	deployments, err := r.getDeployments(ctx, deploymentPool)
 	if err != nil {
-		return err
+		return forceRequeue, err
 	}
-	deployment.Spec.Replicas = deploymentPool.Spec.DeploymentTemplate.Spec.Replicas
-	deployment.Spec.Template.Spec.Containers = deploymentPool.Spec.DeploymentTemplate.Spec.Template.Spec.Containers
-	err = r.Update(ctx, deployment)
-	if err != nil {
-		return err
+	if len(deployments) < int(deploymentPool.Spec.DeploymentCount) {
+		for i := int32(len(deployments)); i < deploymentPool.Spec.DeploymentCount; i++ {
+			err = r.createDeployment(ctx, deploymentPool)
+			if err != nil {
+				log.Log.Error(err, "unable to create Deployment")
+				return forceRequeue, err
+			}
+		}
+		forceRequeue = true
+		return forceRequeue, nil
+	} else if len(deployments) > int(deploymentPool.Spec.DeploymentCount) {
+		for i := int32(len(deployments)); i > deploymentPool.Spec.DeploymentCount; i-- {
+			err = r.Delete(ctx, &deployments[i-1])
+			if err != nil {
+				log.Log.Error(err, "unable to delete Deployment")
+				return forceRequeue, err
+			}
+		}
+		forceRequeue = true
+		return forceRequeue, nil
+	} else {
+		for i := 0; i < len(deployments); i++ {
+			deployment := &deployments[i]
+			deployment.Spec.Replicas = deploymentPool.Spec.DeploymentTemplate.Spec.Replicas
+			deployment.Spec.Template.Spec.Containers = deploymentPool.Spec.DeploymentTemplate.Spec.Template.Spec.Containers
+			err = r.Update(ctx, deployment)
+			if err != nil {
+				log.Log.Error(err, "unable to update Deployment")
+				return forceRequeue, err
+			}
+		}
 	}
 	err = r.updateObservedGeneration(ctx, deploymentPool)
 	if err != nil {
-		return err
+		log.Log.Error(err, "unable to update DeploymentPool")
+		return forceRequeue, err
 	}
-	return nil
+	return forceRequeue, nil
 }
 
 // create deployment
@@ -254,9 +291,9 @@ func (r *DeploymentPoolReconciler) createDeployment(ctx context.Context, deploym
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(deploymentPool, kwoksigsv1beta1.GroupVersion.WithKind("DeploymentPool")),
 			},
-			Name:      deploymentPool.Name,
-			Namespace: deploymentPool.Namespace,
-			Labels:    overrideLabels,
+			GenerateName: deploymentPool.Name + "-",
+			Namespace:    deploymentPool.Namespace,
+			Labels:       overrideLabels,
 		},
 		Spec: deploymentPool.Spec.DeploymentTemplate.Spec,
 	}
@@ -265,10 +302,6 @@ func (r *DeploymentPoolReconciler) createDeployment(ctx context.Context, deploym
 	deployment.Spec.Template.Spec.Tolerations = deploymentToleration
 
 	err := r.Create(ctx, deployment)
-	if err != nil {
-		return err
-	}
-	err = r.updateObservedGeneration(ctx, deploymentPool)
 	if err != nil {
 		return err
 	}

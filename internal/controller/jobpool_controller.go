@@ -18,7 +18,7 @@ package controller
 
 import (
 	"context"
-	"strings"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"time"
 
 	batchv1 "k8s.io/api/batch/v1"
@@ -293,7 +293,7 @@ func (r *JobPoolReconciler) createJobs(ctx context.Context, jobPool *kwoksigsv1b
 func (r *JobPoolReconciler) getJobs(ctx context.Context, jobPool *kwoksigsv1beta1.JobPool) ([]batchv1.Job, error) {
 	jobs := &batchv1.JobList{}
 	err := r.List(ctx, jobs, client.InNamespace(jobPool.Namespace), client.MatchingLabels{controllerLabel: jobPool.Name})
-	if err != nil && strings.Contains(err.Error(), "does not exist") {
+	if err != nil && errors.IsNotFound(err) {
 		return []batchv1.Job{}, nil
 	} else if err != nil {
 		return nil, err

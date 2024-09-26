@@ -50,8 +50,6 @@ func (r *NodePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	err := r.Get(ctx, req.NamespacedName, nodePool)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			// If the custom resource is not found then, it usually means that it was deleted or not created
-			// In this way, we will stop the reconciliation
 			log.Info("nodePool resource not found. Ignoring since object must be deleted")
 			return ctrl.Result{}, nil
 		}
@@ -256,7 +254,7 @@ func (r *NodePoolReconciler) createNodes(ctx context.Context, nodePool *kwoksigs
 					*metav1.NewControllerRef(nodePool, kwoksigsv1beta1.GroupVersion.WithKind("NodePool")),
 				},
 			},
-			Spec: nodePool.Spec.NodeTemplate.Spec,
+			Spec:   nodePool.Spec.NodeTemplate.Spec,
 			Status: nodePool.Spec.NodeTemplate.Status,
 		}
 		node.Spec.Taints = nodeTaint

@@ -9,7 +9,8 @@ metadata:
     app.kubernetes.io/created-by: kwok-operator
   name: deploymentpool-sample
   namespace: default
-spec:  
+spec:
+  deploymentCount: 5
   deploymentTemplate:
     metadata:
       name: kwok-operator

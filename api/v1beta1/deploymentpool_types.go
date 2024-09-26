@@ -23,6 +23,7 @@ import (
 
 // DeploymentPoolSpec defines the desired state of DeploymentPool
 type DeploymentPoolSpec struct {
+	DeploymentCount    int32             `json:"deploymentCount"`
 	DeploymentTemplate appsv1.Deployment `json:"deploymentTemplate"`
 }
 

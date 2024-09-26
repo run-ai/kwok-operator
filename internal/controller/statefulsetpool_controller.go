@@ -21,9 +21,9 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strconv"
+	"strings"
 	"time"
-
-	"slices"
 
 	kwoksigsv1beta1 "github.com/run-ai/kwok-operator/api/v1beta1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -98,8 +98,15 @@ func (r *StatefulsetPoolReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		log.Error(err, "unable to get Statefulset")
 		return ctrl.Result{}, err
 	}
-	if Statefulset == nil {
-		err = r.createStatefulset(ctx, statefulsetPool)
+	// check if statefulset is lower than the expected replicas
+	if len(Statefulset) == 0 {
+		for i := 0; i < int(statefulsetPool.Spec.StatefulsetCount); i++ {
+			err = r.createStatefulset(ctx, statefulsetPool, i)
+			if err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+		err = r.updateObservedGeneration(ctx, statefulsetPool)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
@@ -134,9 +141,13 @@ func (r *StatefulsetPoolReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 			log.Error(err, "unable to update StatefulsetPool status")
 			return ctrl.Result{}, err
 		}
-		err = r.updateStatefulset(ctx, statefulsetPool)
+		forceRequeue := false
+		forceRequeue, err = r.updateStatefulset(ctx, statefulsetPool)
 		if err != nil {
 			return ctrl.Result{}, err
+		}
+		if forceRequeue {
+			return ctrl.Result{Requeue: true}, nil
 		}
 		return ctrl.Result{}, nil
 	}
@@ -152,10 +163,12 @@ func (r *StatefulsetPoolReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 			log.Error(err, "unable to update statefulsetPool status")
 			return ctrl.Result{}, err
 		}
-		err = r.Delete(ctx, Statefulset)
-		if err != nil {
-			log.Error(err, "unable to delete Statefulset")
-			return ctrl.Result{}, err
+		for _, Statefulset := range Statefulset {
+			err = r.Delete(ctx, &Statefulset)
+			if err != nil {
+				log.Error(err, "unable to delete Statefulset")
+				return ctrl.Result{}, err
+			}
 		}
 		err = r.deleteFinalizer(ctx, statefulsetPool)
 		if err != nil {
@@ -163,7 +176,8 @@ func (r *StatefulsetPoolReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 			return ctrl.Result{}, err
 		}
 		// delete all PVC and PV created by the StatefulsetPool
-		pvcList, err := r.getPVCList(ctx, statefulsetPool)
+		pvcList := &corev1.PersistentVolumeClaimList{}
+		err = r.List(ctx, pvcList, client.MatchingLabels{controllerLabel: statefulsetPool.Name})
 		if err != nil {
 			return ctrl.Result{}, err
 		}
@@ -207,122 +221,234 @@ func (r *StatefulsetPoolReconciler) deleteFinalizer(ctx context.Context, statefu
 	return r.Update(ctx, statefulsetPool)
 }
 
-func (r *StatefulsetPoolReconciler) getStatefulset(ctx context.Context, statefulsetPool *kwoksigsv1beta1.StatefulsetPool) (*appsv1.StatefulSet, error) {
-	// get Statefulset with the name of statefulsetPool name
-	Statefulset := &appsv1.StatefulSet{}
-	err := r.Get(ctx, client.ObjectKey{
-		Namespace: statefulsetPool.Namespace,
-		Name:      statefulsetPool.Name,
-	}, Statefulset)
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			return nil, nil
-		}
+func (r *StatefulsetPoolReconciler) getStatefulset(ctx context.Context, statefulsetPool *kwoksigsv1beta1.StatefulsetPool) ([]appsv1.StatefulSet, error) {
+	// get all the Statefulset in the Namespace witt the label of the statefulsetPool
+	Statefulset := &appsv1.StatefulSetList{}
+	err := r.List(ctx, Statefulset, client.InNamespace(statefulsetPool.Namespace), client.MatchingLabels{controllerLabel: statefulsetPool.Name})
+	if err != nil && strings.Contains(err.Error(), "does not exist") {
+		return []appsv1.StatefulSet{}, nil
+	} else if err != nil {
 		return nil, err
 	}
-	return Statefulset, nil
+	return Statefulset.Items, nil
 }
 
-func (r *StatefulsetPoolReconciler) getPVCList(ctx context.Context, statefulsetPool *kwoksigsv1beta1.StatefulsetPool) (*corev1.PersistentVolumeClaimList, error) {
+func (r *StatefulsetPoolReconciler) getPVCList(ctx context.Context, statefulsetPoolName string, statefulsetIndex int) ([]corev1.PersistentVolumeClaim, error) {
 	pvcList := &corev1.PersistentVolumeClaimList{}
-	err := r.List(ctx, pvcList, client.MatchingLabels{controllerLabel: statefulsetPool.Name})
+	err := r.List(ctx, pvcList, client.MatchingLabels{"statefulesetName": fmt.Sprintf("%s-%d", statefulsetPoolName, statefulsetIndex)})
 	if err != nil {
 		return nil, err
 	}
-	return pvcList, nil
+	return pvcList.Items, nil
 }
 
-func (r *StatefulsetPoolReconciler) getPVList(ctx context.Context, statefulsetPool *kwoksigsv1beta1.StatefulsetPool) (*corev1.PersistentVolumeList, error) {
+func (r *StatefulsetPoolReconciler) getPVList(ctx context.Context, statefulsetPoolName string, statefulsetIndex int) ([]corev1.PersistentVolume, error) {
 	pvList := &corev1.PersistentVolumeList{}
-	err := r.List(ctx, pvList, client.MatchingLabels{controllerLabel: statefulsetPool.Name})
+	err := r.List(ctx, pvList, client.MatchingLabels{"statefulesetName": fmt.Sprintf("%s-%d", statefulsetPoolName, statefulsetIndex)})
 	if err != nil {
 		return nil, err
 	}
-	return pvList, nil
+	return pvList.Items, nil
 }
 
 // update Statefulset
-func (r *StatefulsetPoolReconciler) updateStatefulset(ctx context.Context, statefulsetPool *kwoksigsv1beta1.StatefulsetPool) error {
+func (r *StatefulsetPoolReconciler) updateStatefulset(ctx context.Context, statefulsetPool *kwoksigsv1beta1.StatefulsetPool) (bool, error) {
 	// get the Statefulset spec from the cluster
-	Statefulset, err := r.getStatefulset(ctx, statefulsetPool)
-	log.Log.Info("Updating Statefulset", "Statefulset", Statefulset)
+	forceRequeue := false
+	Statefulsets, err := r.getStatefulset(ctx, statefulsetPool)
+	log.Log.Info("Updating Statefulset", "Statefulset", Statefulsets)
 	if err != nil {
-		return err
+		return forceRequeue, err
 	}
-	replicas := statefulsetPool.Spec.StatefulsetTemplate.Spec.Replicas
-	pvList, err := r.getPVList(ctx, statefulsetPool)
-	if err != nil {
-		return err
+	storageClassName := statefulsetPool.Spec.StatefulsetTemplate.Spec.VolumeClaimTemplates[0].Spec.StorageClassName
+	if storageClassName == nil {
+		storageClassName, err = r.getDefaultStorageClassName(ctx)
+		if err != nil {
+			return forceRequeue, err
+		}
 	}
-	Statefulset.Spec.Replicas = replicas
-	Statefulset.Spec.Template.Spec.Containers = statefulsetPool.Spec.StatefulsetTemplate.Spec.Template.Spec.Containers
-	// scale up pv in case of replicas change
-	if statefulsetPool.Spec.CreatePV && statefulsetPool.Spec.StatefulsetTemplate.Spec.VolumeClaimTemplates != nil && int(*replicas) > int(len(pvList.Items)) {
-		storageClassName := statefulsetPool.Spec.StatefulsetTemplate.Spec.VolumeClaimTemplates[0].Spec.StorageClassName
-		println("the storageclase name is", storageClassName)
-		if storageClassName == nil {
-			storageClassName, err = r.getDefaultStorageClassName(ctx)
+	if len(Statefulsets) < int(statefulsetPool.Spec.StatefulsetCount) {
+		for i := len(Statefulsets); i < int(statefulsetPool.Spec.StatefulsetCount); i++ {
+			err = r.createStatefulset(ctx, statefulsetPool, i)
 			if err != nil {
-				return err
+				return forceRequeue, err
 			}
 		}
-		if len(pvList.Items) < int(*replicas) {
-			for i := int(len(pvList.Items)); i < int(*replicas); i++ {
-				pvName := fmt.Sprintf("%s-%d", statefulsetPool.Name, i)
-				err = r.createPV(ctx, statefulsetPool, storageClassName, &pvName)
+		forceRequeue = true
+		return forceRequeue, nil
+	} else if len(Statefulsets) > int(statefulsetPool.Spec.StatefulsetCount) {
+		sortedStsList := make([]appsv1.StatefulSet, len(Statefulsets))
+		copy(sortedStsList, Statefulsets)
+		log.Log.Info("the length of the sts is", "length", len(sortedStsList))
+		sort.Slice(sortedStsList, func(i, j int) bool {
+			// Split the strings to extract the numeric part
+			partsI := strings.Split(sortedStsList[i].Name, "-")
+			partsJ := strings.Split(sortedStsList[j].Name, "-")
+			// Convert the last part to integers for comparison
+			numI, _ := strconv.Atoi(partsI[len(partsI)-1])
+			numJ, _ := strconv.Atoi(partsJ[len(partsJ)-1])
+			// Compare the numeric parts
+			return numI < numJ
+		})
+		for i := len(sortedStsList); i > int(statefulsetPool.Spec.StatefulsetCount); i-- {
+			log.Log.Info("the index is", "index", i-1)
+			err = r.Delete(ctx, &sortedStsList[i-1])
+			if err != nil {
+				return forceRequeue, err
+			}
+			log.Log.Info("Deleting Statefulset", "Statefulset", sortedStsList[i-1])
+			pvcList, err := r.getPVCList(ctx, statefulsetPool.Name, i-1)
+			if err != nil {
+				return forceRequeue, err
+			}
+			for _, pvc := range pvcList {
+				log.Log.Info("Deleting PVC", "PVC", pvc)
+				err = r.Delete(ctx, &pvc)
 				if err != nil {
-					return err
+					return forceRequeue, err
+				}
+			}
+			pvList, err := r.getPVList(ctx, statefulsetPool.Name, i-1)
+			if err != nil {
+				return forceRequeue, err
+			}
+			for _, pv := range pvList {
+				log.Log.Info("Deleting PV", "PV", pv)
+				err = r.Delete(ctx, &pv)
+				if err != nil {
+					return forceRequeue, err
 				}
 			}
 		}
-	}
-	err = r.Update(ctx, Statefulset)
-	if err != nil {
-		return err
-	}
-	if statefulsetPool.Spec.CreatePV && statefulsetPool.Spec.StatefulsetTemplate.Spec.VolumeClaimTemplates != nil && int(*replicas) < int(len(pvList.Items)) {
-		pvcList, err := r.getPVCList(ctx, statefulsetPool)
-		log.Log.Info("Deleting PVC and PV")
-		if err != nil {
-			return err
-		}
-		for i := int(len(pvcList.Items)); i > int(*replicas); i-- {
-			sort.Slice(pvcList.Items, func(i, j int) bool {
-				return slices.Compare([]string{pvcList.Items[i].Name}, []string{pvcList.Items[j].Name}) < 0
-			})
-			sort.Slice(pvList.Items, func(i, j int) bool {
-				return slices.Compare([]string{pvList.Items[i].Name}, []string{pvList.Items[j].Name}) < 0
-			})
-			println(pvList.Items[i-1].Name)
-			err = r.Delete(ctx, &pvcList.Items[i-1])
+		forceRequeue = true
+		return forceRequeue, nil
+	} else {
+		replicas := statefulsetPool.Spec.StatefulsetTemplate.Spec.Replicas
+		for i := 0; i < len(Statefulsets); i++ {
+			Statefulsets[i].Spec.Replicas = replicas
+			Statefulsets[i].Spec.Template.Spec.Containers = statefulsetPool.Spec.StatefulsetTemplate.Spec.Template.Spec.Containers
+			pvList, err := r.getPVList(ctx, statefulsetPool.Name, i)
 			if err != nil {
-				return err
+				return forceRequeue, err
 			}
-			err = r.Delete(ctx, &pvList.Items[i-1])
+			// scale up pv in case of replicas change
+			if statefulsetPool.Spec.CreatePV && statefulsetPool.Spec.StatefulsetTemplate.Spec.VolumeClaimTemplates != nil && int(*replicas) > int(len(pvList)) {
+				nameSuffix := statefulsetPool.Spec.StatefulsetTemplate.Spec.VolumeClaimTemplates[0].Name
+				if len(pvList) < int(*replicas) {
+					for j := int(len(pvList)); j < int(*replicas); j++ {
+						pvName := fmt.Sprintf("%s-%s-%d", nameSuffix, fmt.Sprintf("%s-%d", statefulsetPool.Name, i), j)
+						err = r.createPV(ctx, statefulsetPool, storageClassName, &pvName, i)
+						if err != nil {
+							return forceRequeue, err
+						}
+					}
+				}
+			}
+			err = r.Update(ctx, &Statefulsets[i])
 			if err != nil {
-				return err
+				return forceRequeue, err
+			}
+			// scale down pv in case of replicas change
+			if statefulsetPool.Spec.CreatePV && statefulsetPool.Spec.StatefulsetTemplate.Spec.VolumeClaimTemplates != nil && int(*replicas) < int(len(pvList)) {
+				log.Log.Info("scaling down PV and PVC")
+				err = r.scaleDownPVandPVC(ctx, statefulsetPool, i)
+				if err != nil {
+					return forceRequeue, err
+				}
 			}
 		}
 	}
 	err = r.updateObservedGeneration(ctx, statefulsetPool)
 	if err != nil {
+		return forceRequeue, err
+	}
+	return forceRequeue, nil
+}
+
+// create Statefulset
+func (r *StatefulsetPoolReconciler) scaleDownPVandPVC(ctx context.Context, statefulsetPool *kwoksigsv1beta1.StatefulsetPool, statefulsetIndex int) error {
+	pvcList, err := r.getPVCList(ctx, statefulsetPool.Name, statefulsetIndex)
+	if err != nil {
 		return err
+	}
+	pvList, err := r.getPVList(ctx, statefulsetPool.Name, statefulsetIndex)
+	if err != nil {
+		return err
+	}
+	replicas := statefulsetPool.Spec.StatefulsetTemplate.Spec.Replicas
+	sortedPvList := make([]corev1.PersistentVolume, len(pvList))
+	copy(sortedPvList, pvList)
+	sort.Slice(sortedPvList, func(i, j int) bool {
+		// Split the strings to extract the numeric part
+		partsI := strings.Split(sortedPvList[i].Name, "-")
+		partsJ := strings.Split(sortedPvList[j].Name, "-")
+		// Convert the last part to integers for comparison
+		numI, _ := strconv.Atoi(partsI[len(partsI)-1])
+		numJ, _ := strconv.Atoi(partsJ[len(partsJ)-1])
+		// Compare the numeric parts
+		return numI < numJ
+	})
+	sortedPvcList := make([]corev1.PersistentVolumeClaim, len(pvcList))
+	copy(sortedPvcList, pvcList)
+	sort.Slice(sortedPvcList, func(i, j int) bool {
+		// Split the strings to extract the numeric part
+		partsI := strings.Split(sortedPvcList[i].Name, "-")
+		partsJ := strings.Split(sortedPvcList[j].Name, "-")
+
+		// Convert the last part to integers for comparison
+		numI, _ := strconv.Atoi(partsI[len(partsI)-1])
+		numJ, _ := strconv.Atoi(partsJ[len(partsJ)-1])
+
+		// Compare the numeric parts
+		return numI < numJ
+	})
+	for i := int(len(sortedPvcList)); i > int(*replicas); i-- {
+		// sort PVC list by name to delete the biggest PVC number
+		err = r.Delete(ctx, &sortedPvcList[i-1])
+		if err != nil {
+			return err
+		}
+	}
+	for i := int(len(sortedPvList)); i > int(*replicas); i-- {
+		err = r.Delete(ctx, &sortedPvList[i-1])
+		if err != nil {
+			return err
+		}
+	}
+	if len(sortedPvList) == int(*replicas) {
+		//delete all the pv and pvc
+		for _, pvc := range sortedPvcList {
+			log.Log.Info("Deleting PVC", "PVC", pvc)
+			err = r.Delete(ctx, &pvc)
+			if err != nil {
+				return err
+			}
+		}
+		for _, pv := range sortedPvList {
+			log.Log.Info("Deleting PV", "PV", pv)
+			err = r.Delete(ctx, &pv)
+			if err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
 
-// create Statefulset
-func (r *StatefulsetPoolReconciler) createStatefulset(ctx context.Context, statefulsetPool *kwoksigsv1beta1.StatefulsetPool) error {
+func (r *StatefulsetPoolReconciler) createStatefulset(ctx context.Context, statefulsetPool *kwoksigsv1beta1.StatefulsetPool, statefulsetIndex int) error {
 	appendSelector := statefulsetPool.Spec.StatefulsetTemplate.Spec.Selector
 	appendSelector.MatchLabels[controllerLabel] = statefulsetPool.Name
+	appendSelector.MatchLabels["statefulesetName"] = fmt.Sprintf("%s-%d", statefulsetPool.Name, statefulsetIndex)
 
 	overrideLabels := statefulsetPool.Spec.StatefulsetTemplate.Spec.Template.Labels
 	if overrideLabels == nil {
 		overrideLabels = map[string]string{
-			controllerLabel: statefulsetPool.Name,
+			controllerLabel:    statefulsetPool.Name,
+			"statefulesetName": fmt.Sprintf("%s-%d", statefulsetPool.Name, statefulsetIndex),
 		}
 	} else {
 		overrideLabels[controllerLabel] = statefulsetPool.Name
+		overrideLabels["statefulesetName"] = fmt.Sprintf("%s-%d", statefulsetPool.Name, statefulsetIndex)
 	}
 
 	StatefulsetToleration := statefulsetPool.Spec.StatefulsetTemplate.Spec.Template.Spec.Tolerations
@@ -340,9 +466,8 @@ func (r *StatefulsetPoolReconciler) createStatefulset(ctx context.Context, state
 		ObjectMeta: metav1.ObjectMeta{
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(statefulsetPool, kwoksigsv1beta1.GroupVersion.WithKind("StatefulsetPool")),
-				
 			},
-			Name:      statefulsetPool.Name,
+			Name:      fmt.Sprintf("%s-%d", statefulsetPool.Name, statefulsetIndex),
 			Namespace: statefulsetPool.Namespace,
 			Labels:    overrideLabels,
 		},
@@ -353,24 +478,24 @@ func (r *StatefulsetPoolReconciler) createStatefulset(ctx context.Context, state
 		err := error(nil)
 		replicas := statefulsetPool.Spec.StatefulsetTemplate.Spec.Replicas
 		storageClassName := statefulsetPool.Spec.StatefulsetTemplate.Spec.VolumeClaimTemplates[0].Spec.StorageClassName
-		println("the storageclase name is", storageClassName)
-		if storageClassName == nil { 
+		if storageClassName == nil {
 			storageClassName, err = r.getDefaultStorageClassName(ctx)
 			if err != nil {
 				return err
 			}
 		}
-		pvList, err := r.getPVList(ctx, statefulsetPool)
+		pvList, err := r.getPVList(ctx, statefulsetPool.Name, statefulsetIndex)
 		if err != nil {
 			return err
 		}
-		if len(pvList.Items) < int(*replicas) || len(pvList.Items) == int(*replicas) {
-			pvCount = len(pvList.Items)
+		if len(pvList) < int(*replicas) || len(pvList) == int(*replicas) {
+			pvCount = len(pvList)
 		}
 		if int32(pvCount) != int32(*replicas) && int32(pvCount) < int32(*replicas) {
+			nameSuffix := statefulsetPool.Spec.StatefulsetTemplate.Spec.VolumeClaimTemplates[0].Name
 			for i := int32(pvCount); i < *replicas; i++ {
-				pvName := fmt.Sprintf("%s-%d", statefulsetPool.Name, i)
-				err = r.createPV(ctx, statefulsetPool, storageClassName, &pvName)
+				pvName := fmt.Sprintf("%s-%s-%d", nameSuffix, fmt.Sprintf("%s-%d", statefulsetPool.Name, statefulsetIndex), i)
+				err = r.createPV(ctx, statefulsetPool, storageClassName, &pvName, statefulsetIndex)
 				if err != nil {
 					return err
 				}
@@ -382,10 +507,6 @@ func (r *StatefulsetPoolReconciler) createStatefulset(ctx context.Context, state
 	Statefulset.Spec.Template.Spec.Tolerations = StatefulsetToleration
 
 	err := r.Create(ctx, Statefulset)
-	if err != nil {
-		return err
-	}
-	err = r.updateObservedGeneration(ctx, statefulsetPool)
 	if err != nil {
 		return err
 	}
@@ -408,13 +529,14 @@ func (r *StatefulsetPoolReconciler) getDefaultStorageClassName(ctx context.Conte
 }
 
 // create PV
-func (r *StatefulsetPoolReconciler) createPV(ctx context.Context, statefulsetPool *kwoksigsv1beta1.StatefulsetPool, storageClassName *string, pvName *string) error {
+func (r *StatefulsetPoolReconciler) createPV(ctx context.Context, statefulsetPool *kwoksigsv1beta1.StatefulsetPool, storageClassName *string, pvName *string, statefulsetIndex int) error {
 	pv := &corev1.PersistentVolume{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: *pvName,
 			Labels: map[string]string{
-				controllerLabel: statefulsetPool.Name,
-				"type":          "Local",
+				controllerLabel:    statefulsetPool.Name,
+				"type":             "Local",
+				"statefulesetName": fmt.Sprintf("%s-%d", statefulsetPool.Name, statefulsetIndex),
 			},
 		},
 		Spec: corev1.PersistentVolumeSpec{
@@ -425,6 +547,10 @@ func (r *StatefulsetPoolReconciler) createPV(ctx context.Context, statefulsetPoo
 				corev1.ReadWriteOnce,
 			},
 			StorageClassName: *storageClassName,
+			ClaimRef: &corev1.ObjectReference{
+				Namespace: statefulsetPool.Namespace,
+				Name:      *pvName,
+			},
 			PersistentVolumeReclaimPolicy: corev1.PersistentVolumeReclaimDelete,
 			PersistentVolumeSource: corev1.PersistentVolumeSource{
 				Local: &corev1.LocalVolumeSource{

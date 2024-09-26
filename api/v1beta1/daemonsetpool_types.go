@@ -24,6 +24,7 @@ import (
 // DaemonsetPoolSpec defines the desired state of DaemonsetPool
 
 type DaemonsetPoolSpec struct {
+	DaemonsetCount    int32            `json:"daemonsetCount"`
 	DaemonsetTemplate appsv1.DaemonSet `json:"daemonsetTemplate"`
 }
 
