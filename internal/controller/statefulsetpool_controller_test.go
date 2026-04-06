@@ -21,11 +21,12 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	kwoksigsv1beta1 "github.com/run-ai/kwok-operator/api/v1beta1"
 )
@@ -50,6 +51,26 @@ var _ = Describe("StatefulsetPool Controller", func() {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,
 						Namespace: "default",
+					},
+					Spec: kwoksigsv1beta1.StatefulsetPoolSpec{
+						StatefulsetCount: 1,
+						StatefulsetTemplate: appsv1.StatefulSet{
+							Spec: appsv1.StatefulSetSpec{
+								Selector: &metav1.LabelSelector{
+									MatchLabels: map[string]string{"app": "test-sts-pool"},
+								},
+								Template: corev1.PodTemplateSpec{
+									ObjectMeta: metav1.ObjectMeta{
+										Labels: map[string]string{"app": "test-sts-pool"},
+									},
+									Spec: corev1.PodSpec{
+										Containers: []corev1.Container{
+											{Name: "test", Image: "test:latest"},
+										},
+									},
+								},
+							},
+						},
 					},
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
