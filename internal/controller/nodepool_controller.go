@@ -18,8 +18,6 @@ package controller
 
 import (
 	"context"
-	"strings"
-	"time"
 
 	kwoksigsv1beta1 "github.com/run-ai/kwok-operator/api/v1beta1"
 	corev1 "k8s.io/api/core/v1"
@@ -208,15 +206,14 @@ func (r *NodePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return ctrl.Result{}, nil
 	}
 	log.Info("Reconciliation completed successfully")
-	return ctrl.Result{RequeueAfter: time.Duration(60 * time.Second)}, nil
+	return ctrl.Result{RequeueAfter: DefaultIdleRequeue}, nil
 }
 
 func (r *NodePoolReconciler) getNodes(ctx context.Context, nodePool *kwoksigsv1beta1.NodePool) ([]corev1.Node, error) {
 	nodes := &corev1.NodeList{}
-	err := r.List(ctx, nodes, client.InNamespace(nodePool.Namespace), client.MatchingLabels{controllerLabel: nodePool.Name})
-	if err != nil && strings.Contains(err.Error(), "does not exist") {
-		return []corev1.Node{}, nil
-	} else if err != nil {
+	// Nodes are cluster-scoped; namespace filter is unnecessary and can confuse caches.
+	err := r.List(ctx, nodes, client.MatchingLabels{controllerLabel: nodePool.Name})
+	if err != nil {
 		return nil, err
 	}
 	return nodes.Items, nil

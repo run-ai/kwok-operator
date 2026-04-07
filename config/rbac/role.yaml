@@ -55,6 +55,7 @@ rules:
   - podpools
   - jobpools
   - statefulsetpools
+  - poolchurners
   verbs:
   - create
   - delete
@@ -72,6 +73,7 @@ rules:
   - jobpools/finalizers
   - daemonsetpools/finalizers
   - statefulsetpools/finalizers
+  - poolchurners/finalizers
   verbs:
   - get
   - patch
@@ -85,6 +87,7 @@ rules:
   - jobpools/status
   - daemonsetpools/status
   - statefulsetpools/status
+  - poolchurners/status
   verbs:
   - get
   - patch

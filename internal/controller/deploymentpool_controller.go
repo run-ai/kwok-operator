@@ -18,9 +18,6 @@ package controller
 
 import (
 	"context"
-	"time"
-
-	"k8s.io/apimachinery/pkg/api/errors"
 
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -151,7 +148,7 @@ func (r *DeploymentPoolReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			return ctrl.Result{}, err
 		}
 		if forceRequeue {
-			println("Requeueing the deployment")
+			log.Info("requeue after deployment scale or spec update")
 			return ctrl.Result{Requeue: true}, nil
 		}
 		return ctrl.Result{}, nil
@@ -183,7 +180,7 @@ func (r *DeploymentPoolReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, nil
 	}
 	log.Info("Reconciliation completed successfully")
-	return ctrl.Result{RequeueAfter: time.Duration(60 * time.Second)}, nil
+	return ctrl.Result{RequeueAfter: DefaultIdleRequeue}, nil
 }
 
 func (r *DeploymentPoolReconciler) statusConditionController(ctx context.Context, deploymentPool *kwoksigsv1beta1.DeploymentPool, condition metav1.Condition) error {
@@ -205,9 +202,7 @@ func (r *DeploymentPoolReconciler) getDeployments(ctx context.Context, deploymen
 
 	deployment := &appsv1.DeploymentList{}
 	err := r.List(ctx, deployment, client.InNamespace(deploymentPool.Namespace), client.MatchingLabels{controllerLabel: deploymentPool.Name})
-	if err != nil && errors.IsNotFound(err) {
-		return []appsv1.Deployment{}, nil
-	} else if err != nil {
+	if err != nil {
 		return nil, err
 	}
 	return deployment.Items, nil

@@ -1,0 +1,15 @@
+# Kind cluster: 1 control-plane + 3 workers (4 nodes total).
+# Usage:
+#   kind create cluster --name kwok-cluster --config hack/kind-kwok-cluster.yaml
+#
+# For a fourth worker (5 nodes total), duplicate a "- role: worker" entry below.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  podSubnet: "10.244.0.0/16"
+  serviceSubnet: "10.96.0.0/12"
+nodes:
+  - role: control-plane
+  - role: worker
+  - role: worker
+  - role: worker

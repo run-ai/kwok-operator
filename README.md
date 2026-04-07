@@ -9,11 +9,13 @@ The Kwok operator test on top the following kuberenetes flavors
   - Vanila 
   - EKS ( Elastic Kubernetes Service )
   - GKE ( Goole Kubernetes Engine )
-  - AKS ( Azure Kubernetes Service ) 
+  - AKS ( Azure Kubernetes Service )
+  - OKE (Oracle Kubernetes Engine )
   - RKE1 
   - RKE2 
   - Openshift 
   - Kind 
+  
 
 ## Features
 
@@ -54,7 +56,7 @@ To install Kwok CRDs and the Kwok Operator, follow these steps:
    ```
    or 
    ```shell
-   kubectl apply --server-side -f https://github.com/run-ai/kwok-operator/releases/download/1.0.1/kwok-operator.yaml
+   kubectl apply --server-side -f https://github.com/run-ai/kwok-operator/releases/download/1.0.3/kwok-operator.yaml
    ```
 ## Usage
 
@@ -300,6 +302,17 @@ spec:
             name: nginx
           restartPolicy: Always
 ```
+## PoolChurner (periodic fake Pod churn)
+
+`PoolChurner` keeps a steady number of KWOK-schedulable Pods and, on a fixed interval, deletes a batch so the operator recreates them. That produces **API churn** (create/delete traffic) without real workloads—useful for scenarios such as **network policy** scale testing ([issue #18](https://github.com/run-ai/kwok-operator/issues/18)).
+
+- `podCount`: steady-state number of Pods.
+- `intervalSeconds` (`t`): seconds between churn cycles. Set to `0` (or `churnCount` to `0`) to disable churn and only maintain `podCount` (similar to `PodPool`).
+- `churnCount`: how many Pods to delete each cycle (they are recreated on the next reconcile).
+- `workloadType`: only `Pod` is implemented today; more workload kinds can be added later.
+
+Example: `config/samples/kwok.sigs_v1beta1_poolchurner.yaml`.
+
 ## Troubleshooting 
 
 If you encounter any issues with the Kwok Operator, please check the following:

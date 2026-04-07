@@ -8,6 +8,7 @@ resources:
 - bases/kwok.sigs.run-ai.com_jobpools.yaml
 - bases/kwok.sigs.run-ai.com_daemonsetpools.yaml
 - bases/kwok.sigs.run-ai.com_statefulsetpools.yaml
+- bases/kwok.sigs.run-ai.com_poolchurners.yaml
 #+kubebuilder:scaffold:crdkustomizeresource
 
 patches:

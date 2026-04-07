@@ -18,8 +18,6 @@ package controller
 
 import (
 	"context"
-	"strings"
-	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -210,7 +208,7 @@ func (r *PodPoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, nil
 	}
 	log.Info("Reconciliation finished")
-	return ctrl.Result{RequeueAfter: time.Duration(60 * time.Second)}, nil
+	return ctrl.Result{RequeueAfter: DefaultIdleRequeue}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -242,9 +240,7 @@ func (r *PodPoolReconciler) addFinalizer(ctx context.Context, podPool *kwoksigsv
 func (r *PodPoolReconciler) getPods(ctx context.Context, podPool *kwoksigsv1beta1.PodPool) ([]corev1.Pod, error) {
 	pods := &corev1.PodList{}
 	err := r.List(ctx, pods, client.InNamespace(podPool.Namespace), client.MatchingLabels{controllerLabel: podPool.Name})
-	if err != nil && strings.Contains(err.Error(), "does not exist") {
-		return []corev1.Pod{}, nil
-	} else if err != nil {
+	if err != nil {
 		return nil, err
 	}
 	return pods.Items, nil

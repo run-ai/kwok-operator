@@ -6,4 +6,5 @@ resources:
 - kwok.sigs_v1beta1_jobpool.yaml
 - kwok.sigs_v1beta1_daemonsetpool.yaml
 - kwok.sigs_v1beta1_statefulsetpool.yaml
+- kwok.sigs_v1beta1_poolchurner.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples

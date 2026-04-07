@@ -1,0 +1,26 @@
+apiVersion: kwok.sigs.run-ai.com/v1beta1
+kind: PoolChurner
+metadata:
+  labels:
+    app.kubernetes.io/name: poolchurner
+    app.kubernetes.io/instance: poolchurner-sample
+    app.kubernetes.io/part-of: kwok-operator
+    app.kubernetes.io/created-by: kwok-operator
+  name: poolchurner-sample
+  namespace: default
+spec:
+  workloadType: Pod
+  podCount: 10
+  # Churn every 30s: delete 3 pods; controller recreates them (KWOK / API churn).
+  intervalSeconds: 30
+  churnCount: 3
+  podTemplate:
+    metadata:
+      labels:
+        app.kubernetes.io/name: churn-pod
+        app.kubernetes.io/part-of: kwok-operator
+    spec:
+      containers:
+        - name: pause
+          image: registry.k8s.io/pause:3.9
+      restartPolicy: Always

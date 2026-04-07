@@ -18,8 +18,6 @@ package controller
 
 import (
 	"context"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"time"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -91,8 +89,7 @@ func (r *JobPoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, err
 	}
 	// Check if the JobPool is in the desired state
-	log.Info("Checking if the JobPool is in the desired state")
-	println("jobs: ", len(jobs), "jobPool.Spec.JobCount: ", jobPool.Spec.JobCount)
+	log.Info("Checking if the JobPool is in the desired state", "jobCount", len(jobs), "desired", jobPool.Spec.JobCount)
 	if int32(len(jobs)) != jobPool.Spec.JobCount {
 		if int32(len(jobs)) < jobPool.Spec.JobCount {
 			log.Info("Creating jobs")
@@ -208,7 +205,7 @@ func (r *JobPoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, nil
 	}
 	log.Info("Reconciliation finished")
-	return ctrl.Result{RequeueAfter: time.Duration(60 * time.Second)}, nil
+	return ctrl.Result{RequeueAfter: DefaultIdleRequeue}, nil
 }
 
 // delete the finalizer from the jobPool
@@ -293,9 +290,7 @@ func (r *JobPoolReconciler) createJobs(ctx context.Context, jobPool *kwoksigsv1b
 func (r *JobPoolReconciler) getJobs(ctx context.Context, jobPool *kwoksigsv1beta1.JobPool) ([]batchv1.Job, error) {
 	jobs := &batchv1.JobList{}
 	err := r.List(ctx, jobs, client.InNamespace(jobPool.Namespace), client.MatchingLabels{controllerLabel: jobPool.Name})
-	if err != nil && errors.IsNotFound(err) {
-		return []batchv1.Job{}, nil
-	} else if err != nil {
+	if err != nil {
 		return nil, err
 	}
 	return jobs.Items, nil

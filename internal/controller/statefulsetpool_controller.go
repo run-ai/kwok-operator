@@ -23,7 +23,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
 	kwoksigsv1beta1 "github.com/run-ai/kwok-operator/api/v1beta1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -203,7 +202,7 @@ func (r *StatefulsetPoolReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	}
 
 	log.Info("Reconciliation completed successfully")
-	return ctrl.Result{RequeueAfter: time.Duration(60 * time.Second)}, nil
+	return ctrl.Result{RequeueAfter: DefaultIdleRequeue}, nil
 }
 
 func (r *StatefulsetPoolReconciler) statusConditionController(ctx context.Context, statefulsetPool *kwoksigsv1beta1.StatefulsetPool, condition metav1.Condition) error {
@@ -225,9 +224,7 @@ func (r *StatefulsetPoolReconciler) getStatefulset(ctx context.Context, stateful
 	// get all the Statefulset in the Namespace witt the label of the statefulsetPool
 	Statefulset := &appsv1.StatefulSetList{}
 	err := r.List(ctx, Statefulset, client.InNamespace(statefulsetPool.Namespace), client.MatchingLabels{controllerLabel: statefulsetPool.Name})
-	if err != nil && strings.Contains(err.Error(), "does not exist") {
-		return []appsv1.StatefulSet{}, nil
-	} else if err != nil {
+	if err != nil {
 		return nil, err
 	}
 	return Statefulset.Items, nil

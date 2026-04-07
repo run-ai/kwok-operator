@@ -18,11 +18,9 @@ package controller
 
 import (
 	"context"
-	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -169,7 +167,7 @@ func (r *DaemonsetPoolReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, nil
 	}
 	log.Info("Reconciliation completed successfully")
-	return ctrl.Result{RequeueAfter: time.Duration(60 * time.Second)}, nil
+	return ctrl.Result{RequeueAfter: DefaultIdleRequeue}, nil
 }
 
 // delete finalizer from the DaemonsetPool
@@ -182,10 +180,10 @@ func (r *DaemonsetPoolReconciler) deleteFinalizer(ctx context.Context, daemonset
 func (r *DaemonsetPoolReconciler) updateDaemonset(ctx context.Context, daemonsetPool *kwoksigsv1beta1.DaemonsetPool) error {
 	// get the Daemonset spec from the cluster
 	daemonsets, err := r.getDaemonsets(ctx, daemonsetPool)
-	log.Log.Info("Updating daemonset", "daemonset", daemonsets)
 	if err != nil {
 		return err
 	}
+	log.Log.Info("Updating daemonset", "count", len(daemonsets))
 	// loop through the Daemonset and update the Daemonset with the DaemonsetPool spec
 	if len(daemonsets) < int(daemonsetPool.Spec.DaemonsetCount) {
 		log.Log.Info("the len of the current daemonset is: ", "len", len(daemonsets))
@@ -279,9 +277,7 @@ func (r *DaemonsetPoolReconciler) updateObservedGeneration(ctx context.Context, 
 func (r *DaemonsetPoolReconciler) getDaemonsets(ctx context.Context, daemonsetPool *kwoksigsv1beta1.DaemonsetPool) ([]appsv1.DaemonSet, error) {
 	daemonset := &appsv1.DaemonSetList{}
 	err := r.List(ctx, daemonset, client.InNamespace(daemonsetPool.Namespace), client.MatchingLabels{controllerLabel: daemonsetPool.Name})
-	if err != nil && errors.IsNotFound(err) {
-		return []appsv1.DaemonSet{}, nil
-	} else if err != nil {
+	if err != nil {
 		return nil, err
 	}
 	return daemonset.Items, nil
