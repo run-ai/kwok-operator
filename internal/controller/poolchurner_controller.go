@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"math/rand"
 	"sort"
 	"time"
 
@@ -47,6 +48,22 @@ type PoolChurnerReconciler struct {
 
 func poolChurnerKey(pc *kwoksigsv1beta1.PoolChurner) client.ObjectKey {
 	return client.ObjectKey{Namespace: pc.Namespace, Name: pc.Name}
+}
+
+// shufflePodsForChurn returns n distinct pods chosen uniformly at random (n = min(churnCount, len(pods))).
+func shufflePodsForChurn(pods []corev1.Pod, n int) []corev1.Pod {
+	if n <= 0 || len(pods) == 0 {
+		return nil
+	}
+	if n > len(pods) {
+		n = len(pods)
+	}
+	shuffled := make([]corev1.Pod, len(pods))
+	copy(shuffled, pods)
+	rand.Shuffle(len(shuffled), func(i, j int) {
+		shuffled[i], shuffled[j] = shuffled[j], shuffled[i]
+	})
+	return shuffled[:n]
 }
 
 // updatePoolChurnerStatus loads the latest PoolChurner and writes status (retries on RV conflict).
@@ -226,13 +243,14 @@ func (r *PoolChurnerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{RequeueAfter: interval - elapsed}, nil
 	}
 
-	sort.Slice(pods, func(i, j int) bool { return pods[i].Name < pods[j].Name })
 	churn := int(pc.Spec.ChurnCount)
 	if churn > len(pods) {
 		churn = len(pods)
 	}
-	for i := 0; i < churn; i++ {
-		if err := r.Delete(ctx, &pods[i]); err != nil && !apierrors.IsNotFound(err) {
+	// Random subset each cycle (not name order), so load tests don't always hit the same endpoints.
+	toDelete := shufflePodsForChurn(pods, churn)
+	for i := range toDelete {
+		if err := r.Delete(ctx, &toDelete[i]); err != nil && !apierrors.IsNotFound(err) {
 			return ctrl.Result{}, err
 		}
 	}
