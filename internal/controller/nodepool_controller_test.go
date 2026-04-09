@@ -19,6 +19,7 @@ package controller
 import (
 	"context"
 	"log"
+	"strings"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -337,4 +338,40 @@ func TestNodeTemplateChange(t *testing.T) {
 			assert.Equal(t, nodePool.Spec.NodeTemplate.Labels[kubernetesRoleLabel], "test-nodepool2", "unexpected node labels")
 		}
 	}
+}
+
+func TestNodeStatusForNewNodeSystemUUID(t *testing.T) {
+	fixed := "EC2E3E42-7D5F-4E7A-8F1A-1234567890AB"
+	base := v1beta1.NodePool{
+		Spec: v1beta1.NodePoolSpec{
+			NodeTemplate: corev1.Node{
+				Status: corev1.NodeStatus{
+					NodeInfo: corev1.NodeSystemInfo{
+						SystemUUID: "",
+						Architecture: "amd64",
+					},
+				},
+			},
+		},
+	}
+	// Default off: pass-through empty
+	st := nodeStatusForNewNode(&base)
+	assert.Equal(t, "", st.NodeInfo.SystemUUID)
+
+	// Explicit template UUID: unchanged even when flag true
+	explicit := base
+	explicit.Spec.GenerateUniqueSystemUUID = true
+	explicit.Spec.NodeTemplate.Status.NodeInfo.SystemUUID = fixed
+	st = nodeStatusForNewNode(&explicit)
+	assert.Equal(t, fixed, st.NodeInfo.SystemUUID)
+
+	// Flag on + empty template: random non-empty uppercase UUID
+	gen := base
+	gen.Spec.GenerateUniqueSystemUUID = true
+	a := nodeStatusForNewNode(&gen)
+	b := nodeStatusForNewNode(&gen)
+	assert.NotEmpty(t, a.NodeInfo.SystemUUID)
+	assert.NotEmpty(t, b.NodeInfo.SystemUUID)
+	assert.NotEqual(t, a.NodeInfo.SystemUUID, b.NodeInfo.SystemUUID)
+	assert.Equal(t, a.NodeInfo.SystemUUID, strings.ToUpper(a.NodeInfo.SystemUUID))
 }

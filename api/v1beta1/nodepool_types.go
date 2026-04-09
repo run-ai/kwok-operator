@@ -25,6 +25,14 @@ import (
 type NodePoolSpec struct {
 	NodeCount    int32       `json:"nodeCount"`
 	NodeTemplate corev1.Node `json:"nodeTemplate"`
+
+	// GenerateUniqueSystemUUID, when true, sets a distinct status.nodeInfo.systemUUID on each
+	// created node when the node template leaves systemUUID empty (SMBIOS-style uppercase UUID).
+	// If the template already sets systemUUID, that value is copied unchanged to every node.
+	// Default false preserves previous behavior (https://github.com/run-ai/kwok-operator/issues/20).
+	// +optional
+	// +kubebuilder:default=false
+	GenerateUniqueSystemUUID bool `json:"generateUniqueSystemUUID,omitempty"`
 }
 
 // NodePoolStatus defines the observed state of NodePool

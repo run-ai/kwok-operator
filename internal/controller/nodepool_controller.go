@@ -18,7 +18,9 @@ package controller
 
 import (
 	"context"
+	"strings"
 
+	"github.com/google/uuid"
 	kwoksigsv1beta1 "github.com/run-ai/kwok-operator/api/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -219,6 +221,20 @@ func (r *NodePoolReconciler) getNodes(ctx context.Context, nodePool *kwoksigsv1b
 	return nodes.Items, nil
 }
 
+// nodeStatusForNewNode returns Node status from the template, optionally with a per-node systemUUID
+// when GenerateUniqueSystemUUID is true and the template leaves systemUUID empty (issue #20).
+func nodeStatusForNewNode(nodePool *kwoksigsv1beta1.NodePool) corev1.NodeStatus {
+	tpl := nodePool.Spec.NodeTemplate.Status
+	if !nodePool.Spec.GenerateUniqueSystemUUID || tpl.NodeInfo.SystemUUID != "" {
+		return tpl
+	}
+	ns := nodePool.Spec.NodeTemplate.Status.DeepCopy()
+	ni := ns.NodeInfo
+	ni.SystemUUID = strings.ToUpper(uuid.New().String())
+	ns.NodeInfo = ni
+	return *ns
+}
+
 // Create nodes in the cluster
 func (r *NodePoolReconciler) createNodes(ctx context.Context, nodePool *kwoksigsv1beta1.NodePool, nodes []corev1.Node) error {
 	nodeLabels := nodePool.Spec.NodeTemplate.Labels
@@ -252,7 +268,7 @@ func (r *NodePoolReconciler) createNodes(ctx context.Context, nodePool *kwoksigs
 				},
 			},
 			Spec:   nodePool.Spec.NodeTemplate.Spec,
-			Status: nodePool.Spec.NodeTemplate.Status,
+			Status: nodeStatusForNewNode(nodePool),
 		}
 		node.Spec.Taints = nodeTaint
 		//node.ObjectMeta.Annotations = nodeAnnotation

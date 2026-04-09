@@ -10,6 +10,8 @@ metadata:
   name: nodepool-sample
 spec:
   nodeCount: 15
+  # When true, each KWOK node gets a unique status.nodeInfo.systemUUID if the template leaves it empty.
+  # generateUniqueSystemUUID: true
   nodeTemplate:
     apiVersion: v1
     metadata:

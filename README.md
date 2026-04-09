@@ -110,6 +110,8 @@ spec:
       phase: Running
    ```
 
+**Unique `systemUUID` per node** ([issue #20](https://github.com/run-ai/kwok-operator/issues/20)): set `spec.generateUniqueSystemUUID: true` on the `NodePool`. When the node template leaves `status.nodeInfo.systemUUID` empty, each created node gets a random uppercase UUID (SMBIOS-style). If you set `systemUUID` in the template, that value is used for every node. The field defaults to `false` for backward compatibility.
+
 2. Apply the NodePool CR to your Kubernetes cluster:
 
    ```shell
