@@ -347,7 +347,7 @@ func TestNodeStatusForNewNodeSystemUUID(t *testing.T) {
 			NodeTemplate: corev1.Node{
 				Status: corev1.NodeStatus{
 					NodeInfo: corev1.NodeSystemInfo{
-						SystemUUID: "",
+						SystemUUID:   "",
 						Architecture: "amd64",
 					},
 				},
