@@ -39,6 +39,14 @@ spec:
           spec:
             description: NodePoolSpec defines the desired state of NodePool
             properties:
+              generateUniqueSystemUUID:
+                default: false
+                description: |-
+                  GenerateUniqueSystemUUID, when true, sets a distinct status.nodeInfo.systemUUID on each
+                  created node when the node template leaves systemUUID empty (SMBIOS-style uppercase UUID).
+                  If the template already sets systemUUID, that value is copied unchanged to every node.
+                  Default false preserves previous behavior (https://github.com/run-ai/kwok-operator/issues/20).
+                type: boolean
               nodeCount:
                 format: int32
                 type: integer

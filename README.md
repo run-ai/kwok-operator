@@ -56,7 +56,7 @@ To install Kwok CRDs and the Kwok Operator, follow these steps:
    ```
    or 
    ```shell
-   kubectl apply --server-side -f https://github.com/run-ai/kwok-operator/releases/download/1.0.3/kwok-operator.yaml
+   kubectl apply --server-side -f https://github.com/run-ai/kwok-operator/releases/download/1.0.4/kwok-operator.yaml
    ```
 ## Usage
 
@@ -109,6 +109,8 @@ spec:
         systemUUID: ""
       phase: Running
    ```
+
+**Unique `systemUUID` per node** ([issue #20](https://github.com/run-ai/kwok-operator/issues/20)): set `spec.generateUniqueSystemUUID: true` on the `NodePool`. When the node template leaves `status.nodeInfo.systemUUID` empty, each created node gets a random uppercase UUID (SMBIOS-style). If you set `systemUUID` in the template, that value is used for every node. The field defaults to `false` for backward compatibility.
 
 2. Apply the NodePool CR to your Kubernetes cluster:
 
