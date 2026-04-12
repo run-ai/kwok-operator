@@ -1,0 +1,29 @@
+apiVersion: kwok.sigs.run-ai.com/v1beta1
+kind: KwokController
+metadata:
+  labels:
+    app.kubernetes.io/name: kwokcontroller
+    app.kubernetes.io/instance: kwokcontroller-sample
+    app.kubernetes.io/part-of: kwok-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: kwok-operator
+  name: kwokcontroller-sample
+spec:
+  version: "v0.6.0"
+  namespace: kube-system
+  replicas: 1
+  # resources: set limits to cap memory per instance (addresses issue #1494, ~300MB unbounded).
+  # Tune based on the number of nodes and pods managed by this KWOK instance.
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "100m"
+    limits:
+      memory: "128Mi"
+      cpu: "500m"
+  # enableCRDs restricts which KWOK CRDs the controller watches, reducing informer cache memory.
+  # Remove or expand this list if you need Metric or other KWOK CRD support.
+  enableCRDs:
+    - Stage
+  manageAllNodes: false
+  nodeAnnotationSelector: "kwok.x-k8s.io/node=fake"

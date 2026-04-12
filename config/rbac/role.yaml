@@ -104,3 +104,68 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - ""
+  resources:
+  - serviceaccounts
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - clusterroles
+  - clusterrolebindings
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - kwok.x-k8s.io
+  resources:
+  - "*"
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - kwok.sigs.run-ai.com
+  resources:
+  - kwokcontrollers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - kwok.sigs.run-ai.com
+  resources:
+  - kwokcontrollers/finalizers
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - kwok.sigs.run-ai.com
+  resources:
+  - kwokcontrollers/status
+  verbs:
+  - get
+  - patch
+  - update
